@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/index :: base(~{::contenido})}">
+
+<head>
+    <title>analisis</title>
+</head>
+
+<body>
+    <div class="contenido-dinamico" th:fragment="contenido">
+        <section th:fragment="resultado" class="resultado-analisis" id="resultado-analisis">
+
+            <div class="resultado-cabecera">
+                <div class="cabecera-titulo">
+                    <span class="etiqueta-seccion">Resultados del análisis</span>
+                    <h2 class="titulo-resultado">Informe de originalidad</h2>
+                </div>
+                <div class="resultado-acciones" style="display:flex;gap:.75rem;flex-wrap:wrap;">
+                    <button class="btn-nuevo-analisis" id="btnDescargarReporte">
+                        <i class="bi bi-download"></i>
+                        Descargar reporte PDF
+                    </button>
+                    <button class="btn-nuevo-analisis" id="btnNuevoAnalisis" th:data-href="@{/inicio#analisis}"
+                        onclick="window.location.href = this.getAttribute('data-href')">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        Nuevo análisis
+                    </button>
+                </div>
+            </div>
+
+            <div class="tarjetas-resumen">
+
+                <div class="tarjeta-resumen tarjeta-principal">
+                    <div class="medidor-circular">
+                        <svg viewBox="0 0 120 120" class="svg-medidor">
+                            <circle class="pista-medidor" cx="60" cy="60" r="50" />
+                            <circle class="progreso-medidor" cx="60" cy="60" r="50" id="circuloPlagio"
+                                stroke-dasharray="314" stroke-dashoffset="314" />
+                        </svg>
+                        <div class="medidor-centro">
+                            <span class="medidor-numero" id="numeroPlagio">0</span>
+                            <span class="medidor-signo">%</span>
+                        </div>
+                    </div>
+                    <div class="tarjeta-info">
+                        <span class="tarjeta-etiqueta">Plagio detectado</span>
+                        <span class="tarjeta-nivel" id="nivelPlagio">—</span>
+                    </div>
+                </div>
+
+                <div class="tarjeta-resumen">
+                    <div class="stat-icono" style="--color-icono: #4f46e5;">
+                        <i class="bi bi-journals"></i>
+                    </div>
+                    <div class="tarjeta-info">
+                        <span class="tarjeta-numero" id="numeroFuentes">0</span>
+                        <span class="tarjeta-etiqueta">Fuentes encontradas</span>
+                    </div>
+                </div>
+
+                <div class="tarjeta-resumen">
+                    <div class="stat-icono" style="--color-icono: #059669;">
+                        <i class="bi bi-text-paragraph"></i>
+                    </div>
+                    <div class="tarjeta-info">
+                        <span class="tarjeta-numero" id="numeroPalabras">0</span>
+                        <span class="tarjeta-etiqueta">Palabras analizadas</span>
+                    </div>
+                </div>
+
+                <div class="tarjeta-resumen">
+                    <div class="stat-icono" style="--color-icono: #d97706;">
+                        <i class="bi bi-patch-check"></i>
+                    </div>
+                    <div class="tarjeta-info">
+                        <span class="tarjeta-numero" id="numeroOriginal">0<span style="font-size:1rem">%</span></span>
+                        <span class="tarjeta-etiqueta">Contenido original</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="barra-desglose-wrap">
+                <div class="barra-desglose" id="barraDesglose">
+                </div>
+                <div class="leyenda-desglose" id="leyendaDesglose">
+                </div>
+            </div>
+
+            <div class="layout-analisis">
+
+                <div class="columna-texto">
+                    <div class="columna-cabecera">
+                        <span class="columna-titulo">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Tu documento
+                        </span>
+                        <div class="leyenda-colores" id="leyendaColores">
+                        </div>
+                    </div>
+                    <div class="texto-analizado" id="textoAnalizado">
+                    </div>
+                </div>
+
+                <div class="columna-fuentes">
+                    <div class="columna-cabecera">
+                        <span class="columna-titulo">
+                            <i class="bi bi-search"></i>
+                            Fuentes encontradas
+                        </span>
+                        <span class="fuentes-contador" id="fuentesContador">0 coincidencias</span>
+                    </div>
+                    <div class="lista-fuentes" id="listaFuentes">
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+</body>
+
+</html>

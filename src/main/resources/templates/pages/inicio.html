@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/index :: base(~{::contenido})}">
+
+<head>
+    <title>Eidox</title>
+</head>
+
+<body>
+
+    <div th:fragment="contenido">
+        <section class="hero-section" id="home">
+
+            <canvas id="particles-canvas"></canvas>
+
+            <div class="orb orb-1" data-parallax="0.04"></div>
+            <div class="orb orb-2" data-parallax="0.07"></div>
+            <div class="orb orb-3" data-parallax="0.025"></div>
+            <div class="orb orb-4" data-parallax="0.06"></div>
+
+            <div class="hero-grid"></div>
+
+            <div class="hero-content">
+
+                <h1 class="hero-title reveal-up" style="--delay: 100ms">
+                    Detecta el plagio <br>
+                    <span class="hero-title-accent">protege tus ideas</span>
+                </h1>
+
+                <p class="hero-subtitle reveal-up" style="--delay: 200ms">
+                    Tecnología avanzada para comparar tu texto contra fuentes<br class="d-none d-md-block">
+                    alojadas en nuestro repositorio academico local — gratis, rápido, preciso.
+                </p>
+
+                <div class="hero-actions reveal-up" style="--delay: 300ms">
+                    <a href="#analisis" class="btn-hero-primary">
+                        Analizar ahora
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path d="M12 5v14M5 12l7 7 7-7" />
+                        </svg>
+                    </a>
+                    <a href="#about" class="btn-hero-ghost">Saber más</a>
+                </div>
+
+
+                <div class="hero-stats reveal-up" style="--delay: 400ms">
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="0">0</span><span class="stat-suffix">%</span>
+                        <span class="stat-label">Precisión</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="0">0</span><span class="stat-suffix">+</span>
+                        <span class="stat-label">Documentos analizados</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" data-target="0">0</span><span class="stat-suffix">s</span>
+                        <span class="stat-label">Tiempo promedio</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <section id="analisis" class="analisis-section">
+            <div class="analisis-bg-accent"></div>
+
+            <div class="container-analisis fade-section">
+                <div class="analisis-header">
+                    <p class="section-eyebrow ">Analisis en tiempo real</p>
+                    <h2 class="section-title">Verifica tu texto ahora</h2>
+                    <p class="section-desc">
+                        Soporte para archivos <strong>.pdf</strong> y <strong>.docx</strong>. Contrasta contra
+                        repositorios
+                        de
+                        datos
+                        internos en tiempo real.
+                    </p>
+                </div>
+
+                <div class="analisis-panel">
+                    <div class="analisis-loading-overlay" id="analisisLoadingOverlay" hidden>
+                        <div class="analisis-loading-card">
+                            <div class="analisis-spinner"></div>
+                            <strong>Analizando documento</strong>
+                            <span>Procesando similitud y fuentes...</span>
+                        </div>
+                    </div>
+
+                    <div class="analisis-toolbar">
+                        <div class="toolbar-left">
+                            <input type="file" id="archivo" class="input-hidden" accept=".pdf, .docx">
+                            <label for="archivo" id="btn-upload" class="btn-tool btn-upload">
+                                <img src="/img/cloud-arrow-up-fill.svg" height="16">
+                                Subir documento
+                            </label>
+                            <span class="archivo-nombre"></span>
+                            <button type="button" class="archivo-remove d-none">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                        <button class="btn-tool btn-analizar-main" id="btnAnalizar"> <!-- th:data-href="@{/analisis}"
+                            onclick="window.location.href = this.getAttribute('data-href')"> -->
+                            <img src="/img/MdiFileCompare.svg" height="18">
+                            Realizar análisis
+                        </button>
+                    </div>
+
+                    <div class="textarea-wrap">
+                        <textarea class="textarea-main" id="txtAnalizar" name="textoAnalisis"
+                            placeholder="Ingresa tu texto o carga un documento para comenzar el análisis..."></textarea>
+                        <button onclick="borrarTexto()" class="btn-trash-new" id="btnTrash" style="display:none">
+                            <img src="/img/IconoirTrash.svg" height="22">
+                            <span class="trash-tooltip">Borrar texto</span>
+                        </button>
+                    </div>
+
+                    <div class="word-bar-wrap">
+                        <div class="word-info">
+                            <span>Palabras: <strong id="contadortxt">0</strong> / 1000</span>
+                        </div>
+                        <div class="word-progress-track">
+                            <div class="word-progress-fill" id="wordProgress"></div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-note" id="analysisNote">
+                        Escribe al menos 70 palabras o sube un documento para habilitar el análisis.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="serviciosNuevos" class="servicios-section fade-section">
+            <div class="servicios-inner">
+                <p class="section-eyebrow text-center">Próximamente</p>
+                <h2 class="section-title text-center">Nuevas implementaciones</h2>
+
+                <div class="servicios-grid">
+                    <div class="servicio-tarjeta-contenedor">
+                        <h5>Detección de IA</h5>
+                        <div class="servicio-card-new ">
+
+                            <div class="servicio-icon">
+                                <svg xmlns="http://w3.org" viewBox="0 0 800 600" width="100%" height="100%">
+                                    <defs>
+                                        <!-- Degradado para el cerebro / IA -->
+                                        <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#2563eb" />
+                                            <stop offset="100%" stop-color="#9333ea" />
+                                        </linearGradient>
+                                        <!-- Degradado para la lupa y elementos de detección -->
+                                        <linearGradient id="detectGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#06b6d4" />
+                                            <stop offset="100%" stop-color="#3b82f6" />
+                                        </linearGradient>
+                                        <!-- Brillo del escáner -->
+                                        <linearGradient id="scannerGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.4" />
+                                            <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.0" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    <!-- Fondo oscuro tecnológico opcional (eliminar si se busca transparencia) -->
+                                    <!--                                 <rect width="100%" height="100%" fill="#0f172a" rx="16" />-->
+                                    <!-- RECUADRO DE ENFOQUE / ESCANEO (Target) -->
+                                    <g stroke="#334155" stroke-width="2" fill="none">
+                                        <path d="M 220 180 L 190 180 L 190 210" stroke-linecap="round" />
+                                        <path d="M 580 180 L 610 180 L 610 210" stroke-linecap="round" />
+                                        <path d="M 190 390 L 190 420 L 220 420" stroke-linecap="round" />
+                                        <path d="M 610 390 L 610 420 L 580 420" stroke-linecap="round" />
+                                    </g>
+
+                                    <!-- LINEA DE ESCANEO ACTIVA -->
+                                    <rect x="200" y="220" width="400" height="60" fill="url(#scannerGlow)" />
+                                    <line x1="180" y1="220" x2="620" y2="220" stroke="#22d3ee" stroke-width="3"
+                                        stroke-dasharray="8 4" opacity="0.8" />
+
+                                    <!-- CEREBRO DIGITAL (LA IA) -->
+                                    <g transform="translate(275, 170)" fill="none" stroke="url(#aiGradient)"
+                                        stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                                        <!-- Hemisferio Izquierdo (Circuitos rectos) -->
+                                        <path
+                                            d="M 110 50 C 60 50, 40 90, 40 130 C 40 180, 70 200, 90 220 C 100 230, 110 250, 110 270 L 110 50 Z" />
+                                        <path d="M 70 100 L 95 100" stroke-width="3" />
+                                        <path d="M 50 140 L 80 140 L 95 155" stroke-width="3" />
+                                        <path d="M 60 180 L 95 180" stroke-width="3" />
+                                        <!-- Nodos del circuito izquierdo -->
+                                        <circle cx="70" cy="100" r="4" fill="#2563eb" stroke="none" />
+                                        <circle cx="50" cy="140" r="4" fill="#2563eb" stroke="none" />
+                                        <circle cx="60" cy="180" r="4" fill="#2563eb" stroke="none" />
+
+                                        <!-- Hemisferio Derecho (Circuitos curvos/orgánicos) -->
+                                        <path
+                                            d="M 140 50 C 190 50, 210 90, 210 130 C 210 180, 180 200, 160 220 C 150 230, 140 250, 140 270 L 140 50 Z" />
+                                        <path d="M 140 90 C 170 90, 180 110, 180 120" stroke-width="3" />
+                                        <path d="M 140 150 C 165 150, 175 165, 195 165" stroke-width="3" />
+                                        <path d="M 140 210 C 170 210, 160 235, 175 245" stroke-width="3" />
+                                        <!-- Nodos del circuito derecho -->
+                                        <circle cx="180" cy="120" r="4" fill="#9333ea" stroke="none" />
+                                        <circle cx="195" cy="165" r="4" fill="#9333ea" stroke="none" />
+                                        <circle cx="175" cy="245" r="4" fill="#9333ea" stroke="none" />
+                                    </g>
+
+                                    <!-- LUPA DE DETECCIÓN (Análisis) -->
+                                    <g transform="translate(140, 60)">
+                                        <!-- Mango de la lupa -->
+                                        <rect x="420" y="360" width="35" height="120" rx="10"
+                                            transform="rotate(-45 420 360)" fill="url(#detectGradient)" />
+                                        <!-- Sombra/Detalle del mango -->
+                                        <rect x="432" y="360" width="10" height="120" rx="5"
+                                            transform="rotate(-45 420 360)" fill="#0f172a" opacity="0.3" />
+
+                                        <!-- Aro exterior de la lupa -->
+                                        <circle cx="260" cy="240" r="130" fill="none" stroke="url(#detectGradient)"
+                                            stroke-width="14" filter="drop-shadow(0px 10px 20px rgba(6,182,212,0.3))" />
+                                        <!-- Aro interior de luz -->
+                                        <circle cx="260" cy="240" r="118" fill="none" stroke="#e0f2fe" stroke-width="2"
+                                            opacity="0.6" />
+
+                                        <!-- Destello de cristal de la lupa -->
+                                        <path d="M 170 170 A 115 115 0 0 1 350 170" fill="none" stroke="#ffffff"
+                                            stroke-width="6" stroke-linecap="round" opacity="0.5" />
+                                    </g>
+
+                                    <!-- SÍMBOLO DE RECONOCIMIENTO / CHECK (IA Detectada con éxito) -->
+                                    <circle cx="480" cy="380" r="28" fill="#10b981" />
+                                    <path d="M 468 380 L 476 388 L 494 370" fill="none" stroke="#ffffff"
+                                        stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <!--  <img th:src="@{/img/detectorIA.jpg}" alt="Detección de IA"> -->
+                            </div>
+
+                            <p>Identifica textos generados por inteligencia artificial con precisión avanzada.</p>
+                        </div>
+                        <div class="servicio-tag">En desarrollo</div>
+                    </div>
+                    <div class="servicio-tarjeta-contenedor">
+                        <h5>Verificación bibliográfica</h5>
+                        <div class="servicio-card-new">
+                            <div class="servicio-icon">
+                                <svg xmlns="http://w3.org" viewBox="0 0 800 600" width="100%" height="100%">
+                                    <defs>
+                                        <!-- Degradado principal para el libro y la educación -->
+                                        <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#0284c7" />
+                                            <stop offset="100%" stop-color="#0369a1" />
+                                        </linearGradient>
+                                        <!-- Degradado para la lupa y la acción de revisar -->
+                                        <linearGradient id="reviewGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#f59e0b" />
+                                            <stop offset="100%" stop-color="#d97706" />
+                                        </linearGradient>
+                                        <!-- Degradado para los documentos de fondo -->
+                                        <linearGradient id="docGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stop-color="#38bdf8" />
+                                            <stop offset="100%" stop-color="#0284c7" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    <!-- DOCUMENTOS DE FONDO (Fuentes bibliográficas apiladas) -->
+                                    <!-- Documento trasero izquierdo -->
+                                    <g transform="translate(240, 130) rotate(-10)" opacity="0.4">
+                                        <rect width="140" height="190" rx="8" fill="url(#docGradient)" />
+                                        <line x1="20" y1="40" x2="120" y2="40" stroke="#ffffff" stroke-width="6"
+                                            stroke-linecap="round" />
+                                        <line x1="20" y1="70" x2="100" y2="70" stroke="#ffffff" stroke-width="4"
+                                            stroke-linecap="round" />
+                                        <line x1="20" y1="100" x2="110" y2="100" stroke="#ffffff" stroke-width="4"
+                                            stroke-linecap="round" />
+                                    </g>
+
+                                    <!-- Documento trasero derecho -->
+                                    <g transform="translate(420, 120) rotate(15)" opacity="0.3">
+                                        <rect width="140" height="190" rx="8" fill="url(#docGradient)" />
+                                        <line x1="20" y1="40" x2="120" y2="40" stroke="#ffffff" stroke-width="6"
+                                            stroke-linecap="round" />
+                                        <line x1="20" y1="70" x2="110" y2="70" stroke="#ffffff" stroke-width="4"
+                                            stroke-linecap="round" />
+                                        <line x1="20" y1="100" x2="80" y2="100" stroke="#ffffff" stroke-width="4"
+                                            stroke-linecap="round" />
+                                        <line x1="20" y1="130" x2="100" y2="130" stroke="#ffffff" stroke-width="4"
+                                            stroke-linecap="round" />
+                                    </g>
+
+                                    <!-- LIBRO ABIERTO PRINCIPAL (La fuente bibliográfica central) -->
+                                    <g transform="translate(180, 220)">
+                                        <!-- Lomo/Sombra inferior del libro -->
+                                        <path d="M 20 190 Q 220 230 420 190 L 420 210 Q 220 250 20 210 Z" fill="#0284c7"
+                                            opacity="0.5" />
+
+                                        <!-- Páginas base del libro (Grosor) -->
+                                        <path d="M 15 185 Q 220 225 425 185 L 425 195 Q 220 235 15 195 Z"
+                                            fill="#e2e8f0" />
+
+                                        <!-- Página izquierda -->
+                                        <path d="M 220 190 C 120 190, 40 160, 20 180 L 20 30 C 40 10, 120 40, 220 40 Z"
+                                            fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+                                        <!-- Páginas derechas -->
+                                        <path
+                                            d="M 220 190 C 320 190, 400 160, 420 180 L 420 30 C 400 10, 320 40, 220 40 Z"
+                                            fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+
+                                        <!-- Líneas de texto simuladas (Página Izquierda) -->
+                                        <g stroke="#94a3b8" stroke-width="4" stroke-linecap="round" opacity="0.7">
+                                            <line x1="50" y1="65" x2="180" y2="65" stroke="#0284c7" stroke-width="6" />
+                                            <!-- Título de la fuente -->
+                                            <line x1="50" y1="95" x2="190" y2="95" />
+                                            <line x1="50" y1="120" x2="160" y2="120" />
+                                            <line x1="50" y1="145" x2="185" y2="145" />
+                                        </g>
+
+                                        <!-- Líneas de texto simuladas (Página Derecha) -->
+                                        <g stroke="#94a3b8" stroke-width="4" stroke-linecap="round" opacity="0.7">
+                                            <line x1="250" y1="65" x2="380" y2="65" />
+                                            <line x1="250" y1="95" x2="350" y2="95" />
+                                            <line x1="250" y1="120" x2="390" y2="120" />
+                                            <line x1="250" y1="145" x2="320" y2="145" />
+                                        </g>
+
+                                        <!-- Marcador de página / Cinta dorada -->
+                                        <path d="M 210 40 L 210 170 L 220 160 L 230 170 L 230 40 Z"
+                                            fill="url(#reviewGradient)" />
+                                    </g>
+
+                                    <!-- ELEMENTOS DE AUDITORÍA / DETECCIÓN (Lupa y Conexiones) -->
+                                    <!-- Líneas de conexión/Análisis de citas bibliográficas -->
+                                    <g fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 4"
+                                        opacity="0.6">
+                                        <path d="M 290 200 L 210 200 L 210 320 L 260 320" />
+                                        <path d="M 520 180 L 590 180 L 590 290 L 540 290" />
+                                    </g>
+
+                                    <!-- LUPA DE EXAMEN (Enfocada en el texto del libro) -->
+                                    <g transform="translate(230, 160)">
+                                        <!-- Mango de la lupa con rotación -->
+                                        <rect x="290" y="250" width="30" height="110" rx="8"
+                                            transform="rotate(-45 290 250)" fill="url(#reviewGradient)" />
+                                        <rect x="300" y="250" width="10" height="110" rx="4"
+                                            transform="rotate(-45 290 250)" fill="#0f172a" opacity="0.2" />
+
+                                        <!-- Aro exterior dorado de examen -->
+                                        <circle cx="180" cy="140" r="95" fill="none" stroke="url(#reviewGradient)"
+                                            stroke-width="12"
+                                            filter="drop-shadow(0px 8px 16px rgba(245,158,11,0.25))" />
+                                        <!-- Aro interno metálico -->
+                                        <circle cx="180" cy="140" r="85" fill="none" stroke="#fef3c7" stroke-width="2"
+                                            opacity="0.5" />
+
+                                        <!-- Cristal con efecto reflejo -->
+                                        <path d="M 115 90 A 80 80 0 0 1 245 90" fill="none" stroke="#ffffff"
+                                            stroke-width="5" stroke-linecap="round" opacity="0.4" />
+                                    </g>
+
+                                    <!-- ICONO DE VALIDACIÓN / FUENTE CONFIABLE (Check Verde) -->
+                                    <g transform="translate(420, 280)">
+                                        <circle cx="40" cy="40" r="24" fill="#10b981"
+                                            filter="drop-shadow(0px 4px 10px rgba(16,185,129,0.4))" />
+                                        <path d="M 28 40 L 36 48 L 52 30" fill="none" stroke="#ffffff" stroke-width="5"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                    </g>
+                                </svg>
+                                <!--<img th:src="@{/img/fuenteBibliograficas.jpg}" alt="Verificación bibliográfica"> -->
+                            </div>
+                            <p>Verifica la validez de citas y referencias bibliográficas automáticamente.</p>
+
+                        </div>
+                        <div class="servicio-tag">En desarrollo</div>
+                    </div>
+
+                    <div class="servicio-tarjeta-contenedor">
+                        <h5>Análisis de originalidad</h5>
+                        <div class="servicio-card-new">
+                            <div class="servicio-icon">
+                                <svg xmlns="http://w3.org" viewBox="0 0 800 600" width="100%" height="100%">
+                                    <defs>
+                                        <!-- Degradado para el documento de texto -->
+                                        <linearGradient id="textDocGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#ffffff" />
+                                            <stop offset="100%" stop-color="#f1f5f9" />
+                                        </linearGradient>
+                                        <!-- Degradado para la huella dactilar / autenticidad -->
+                                        <linearGradient id="fingerprintGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#14b8a6" />
+                                            <stop offset="100%" stop-color="#059669" />
+                                        </linearGradient>
+                                        <!-- Degradado para los elementos de escaneo cian -->
+                                        <linearGradient id="scanCyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#06b6d4" />
+                                            <stop offset="100%" stop-color="#0891b2" />
+                                        </linearGradient>
+                                        <!-- Brillo del haz de escáner -->
+                                        <linearGradient id="laserGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#14b8a6" stop-opacity="0" />
+                                            <stop offset="50%" stop-color="#14b8a6" stop-opacity="0.3" />
+                                            <stop offset="100%" stop-color="#14b8a6" stop-opacity="0" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    <!-- RED DE DATOS / CÓDIGO BINARIO DE FONDO (Representa el análisis de datos) -->
+                                    <g fill="#334155" font-family="monospace" font-size="14" opacity="0.3">
+                                        <text x="150" y="120">01010110</text>
+                                        <text x="150" y="150">11001001</text>
+                                        <text x="550" y="120">ORIGINAL</text>
+                                        <text x="550" y="150">10011101</text>
+                                        <text x="150" y="480">11010010</text>
+                                        <text x="570" y="450">0110</text>
+                                    </g>
+
+                                    <!-- GRÁFICO CENTRAL: EL DOCUMENTO ANALIZADO -->
+                                    <g transform="translate(260, 100)">
+                                        <!-- Sombra del documento -->
+                                        <rect x="10" y="10" width="280" height="380" rx="12" fill="#020617"
+                                            opacity="0.4" />
+                                        <!-- Cuerpo del documento -->
+                                        <rect width="280" height="380" rx="12" fill="url(#textDocGradient)"
+                                            stroke="#cbd5e1" stroke-width="2" />
+
+                                        <!-- Líneas de texto simuladas (Cuerpo del escrito) -->
+                                        <g stroke="#94a3b8" stroke-width="6" stroke-linecap="round" opacity="0.6">
+                                            <line x1="40" y1="50" x2="180" y2="50" stroke="#06b6d4" stroke-width="8" />
+                                            <!-- Título destacado -->
+                                            <line x1="40" y1="90" x2="240" y2="90" />
+                                            <line x1="40" y1="120" x2="220" y2="120" />
+                                            <line x1="40" y1="150" x2="240" y2="150" />
+                                            <line x1="40" y1="180" x2="140" y2="180" />
+
+                                            <line x1="40" y1="230" x2="240" y2="230" />
+                                            <line x1="40" y1="260" x2="200" y2="260" />
+                                            <line x1="40" y1="290" x2="230" y2="290" />
+                                            <line x1="40" y1="320" x2="170" y2="320" />
+                                        </g>
+                                    </g>
+
+                                    <!-- ELEMENTO SÚPER-IMPUESTO: HUELLA DACTILAR DIGITAL (Identidad del texto) -->
+                                    <g transform="translate(330, 260)">
+                                        <!-- Fondo circular oscuro para resaltar la huella -->
+                                        <circle cx="70" cy="70" r="85" fill="#0f172a" stroke="#1e293b" stroke-width="4"
+                                            filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.5))" />
+
+                                        <!-- Líneas de la huella digital (Estilo vectorial curvo con gaps) -->
+                                        <g fill="none" stroke="url(#fingerprintGradient)" stroke-width="5"
+                                            stroke-linecap="round">
+                                            <path d="M 45 85 C 45 55, 95 55, 95 85 C 95 100, 85 110, 70 125" />
+                                            <path d="M 30 85 C 30 40, 110 40, 110 85 C 110 115, 80 120, 60 140" />
+                                            <path d="M 60 65 C 65 55, 75 55, 80 65 C 80 75, 60 80, 60 95" />
+                                            <path d="M 15 85 C 15 20, 125 20, 125 85 C 125 120, 110 135, 90 150" />
+                                        </g>
+
+                                        <!-- Línea de escaneo láser sobre la huella -->
+                                        <rect x="-40" y="45" width="220" height="40" fill="url(#laserGlow)" />
+                                        <line x1="-40" y1="65" x2="180" y2="65" stroke="#14b8a6" stroke-width="3"
+                                            filter="drop-shadow(0px 0px 8px #14b8a6)" />
+                                    </g>
+
+                                    <!-- INTERFAZ DE PORCENTAJE (Resultado del análisis de originalidad) -->
+                                    <g transform="translate(130, 250)">
+                                        <!-- Fondo del widget de estado -->
+                                        <rect width="140" height="140" rx="20" fill="#1e293b" stroke="#334155"
+                                            stroke-width="2" filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.3))" />
+
+                                        <!-- Anillo de progreso de porcentaje (Anillo de fondo) -->
+                                        <circle cx="70" cy="60" r="40" fill="none" stroke="#334155" stroke-width="6" />
+                                        <!-- Anillo activo (100% de originalidad simulado a 3/4 partes) -->
+                                        <path d="M 70 20 A 40 40 0 1 1 35 80" fill="none"
+                                            stroke="url(#scanCyanGradient)" stroke-width="6" stroke-linecap="round" />
+
+                                        <!-- Texto del porcentaje -->
+                                        <text x="70" y="66" fill="#ffffff" font-family="sans-serif" font-size="18"
+                                            font-weight="bold" text-anchor="middle">100%</text>
+                                        <!-- Etiqueta inferior -->
+                                        <text x="70" y="115" fill="#06b6d4" font-family="sans-serif" font-size="12"
+                                            font-weight="bold" text-anchor="middle" letter-spacing="1">ÚNICO</text>
+                                    </g>
+
+                                    <!-- ELEMENTO ADICIONAL DE ESCANEO / ESCUDO DE PROTECCIÓN -->
+                                    <g transform="translate(540, 260)">
+                                        <!-- Nodo de conexión exitosa -->
+                                        <circle cx="30" cy="30" r="20" fill="#10b981" opacity="0.2" />
+                                        <circle cx="30" cy="30" r="8" fill="#10b981" />
+                                        <!-- Línea de pulso tecnológico -->
+                                        <path d="M -30 30 L 10 30" fill="none" stroke="#10b981" stroke-width="3"
+                                            stroke-dasharray="4 2" />
+                                    </g>
+                                </svg>
+                                <!-- <img th:src="@{/img/originalidad.jpg}" alt="Análisis de originalidad">-->
+                            </div>
+                            <p>Obtén un informe detallado del porcentaje de contenido original en tu texto.</p>
+                        </div>
+                        <div class="servicio-tag">En desarrollo</div>
+                    </div>
+                    <div class="servicio-tarjeta-contenedor">
+                        <h5>Revisión gramatical</h5>
+
+                        <div class="servicio-card-new">
+                            <div class="servicio-icon">
+                                <svg xmlns="http://w3.org" viewBox="0 0 800 600" width="100%" height="100%">
+                                    <defs>
+                                        <!-- Degradado para la pluma/lápiz corrector -->
+                                        <linearGradient id="penGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#ec4899" />
+                                            <stop offset="100%" stop-color="#be185d" />
+                                        </linearGradient>
+                                        <!-- Degradado para el cuadro de sugerencia gramatical -->
+                                        <linearGradient id="bubbleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#8b5cf6" />
+                                            <stop offset="100%" stop-color="#6d28d9" />
+                                        </linearGradient>
+                                        <!-- Degradado sutil para el documento -->
+                                        <linearGradient id="sheetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#ffffff" />
+                                            <stop offset="100%" stop-color="#f8fafc" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    <!-- ELEMENTOS FLOTANTES DE IDIOMA / DICCIONARIO (Fondo abstracto) -->
+                                    <g fill="#334155" font-family="sans-serif" font-weight="bold" font-size="28"
+                                        opacity="0.2">
+                                        <text x="140" y="160">A</text>
+                                        <text x="170" y="190">B</text>
+                                        <text x="135" y="220">C</text>
+                                        <!-- Icono abstracto de comillas de citación -->
+                                        <path
+                                            d="M 620 120 C 610 120, 600 130, 600 145 C 600 165, 615 175, 615 175 L 605 195 L 620 195 L 635 165 C 635 135, 625 120, 620 120 Z 
+             M 650 120 C 640 120, 630 130, 630 145 C 630 165, 645 175, 645 175 L 635 195 L 650 195 L 665 165 C 665 135, 655 120, 650 120 Z" />
+                                    </g>
+
+                                    <!-- DOCUMENTO PRINCIPAL (Texto bajo revisión) -->
+                                    <g transform="translate(250, 110)">
+                                        <!-- Sombra del documento -->
+                                        <rect x="12" y="12" width="300" height="380" rx="14" fill="#020617"
+                                            opacity="0.4" />
+                                        <!-- Hoja de papel -->
+                                        <rect width="300" height="380" rx="14" fill="url(#sheetGradient)"
+                                            stroke="#cbd5e1" stroke-width="2" />
+
+                                        <!-- Líneas de texto del párrafo -->
+                                        <g stroke="#94a3b8" stroke-width="6" stroke-linecap="round" opacity="0.6">
+                                            <line x1="40" y1="60" x2="160" y2="60" stroke="#8b5cf6" stroke-width="8" />
+                                            <!-- Encabezado -->
+                                            <line x1="40" y1="110" x2="260" y2="110" />
+                                            <line x1="40" y1="140" x2="210" y2="140" />
+
+                                            <!-- Línea con error/corrección (Gramática detectada) -->
+                                            <line x1="40" y1="180" x2="110" y2="180" />
+                                            <line x1="125" y1="180" x2="230" y2="180" stroke="#ec4899"
+                                                stroke-width="6" />
+                                            <!-- Palabra marcada -->
+                                            <line x1="245" y1="180" x2="260" y2="180" />
+
+                                            <!-- Subrayado ondulado de error gramatical bajo la palabra morada -->
+                                            <path
+                                                d="M 125 190 Q 130 194, 135 190 T 145 190 T 155 190 T 165 190 T 175 190 T 185 190 T 195 190 T 205 190 T 215 190 T 225 190"
+                                                fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="medium"
+                                                opacity="0.9" />
+
+                                            <line x1="40" y1="230" x2="250" y2="230" />
+                                            <line x1="40" y1="260" x2="180" y2="260" />
+                                            <line x1="40" y1="300" x2="260" y2="300" />
+                                            <line x1="40" y1="330" x2="140" y2="330" />
+                                        </g>
+                                    </g>
+
+                                    <!-- GLOBO DE DIÁLOGO DE SUGERENCIA (Corrección Inteligente / Pop-up) -->
+                                    <g transform="translate(100, 260)">
+                                        <!-- Contenedor del cuadro de diálogo -->
+                                        <path
+                                            d="M 20 20 L 160 20 A 12 12 0 0 1 172 32 L 172 100 A 12 12 0 0 1 160 112 L 130 112 L 115 127 L 100 112 L 20 112 A 12 12 0 0 1 8 100 L 8 32 A 12 12 0 0 1 20 20 Z"
+                                            fill="url(#bubbleGradient)"
+                                            filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.3))" />
+
+                                        <!-- Texto simulado o aprobado dentro de la sugerencia -->
+                                        <line x1="28" y1="45" x2="152" y2="45" stroke="#a78bfa" stroke-width="4"
+                                            stroke-linecap="round" />
+                                        <line x1="28" y1="65" x2="130" y2="65" stroke="#ffffff" stroke-width="5"
+                                            stroke-linecap="round" />
+                                        <line x1="28" y1="85" x2="90" y2="85" stroke="#22d3ee" stroke-width="4"
+                                            stroke-linecap="round" />
+
+                                        <!-- Pequeño check de aceptación -->
+                                        <circle cx="145" cy="85" r="10" fill="#10b981" />
+                                        <path d="M 141 85 L 144 88 L 149 83" fill="none" stroke="#ffffff"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    </g>
+
+                                    <!-- PLUMA ESTILOGRÁFICA / LÁPIZ DIGITAL (Editando el texto) -->
+                                    <g transform="translate(420, 180) rotate(-15)">
+                                        <!-- Sombra del lápiz -->
+                                        <path d="M 25 260 L 55 260 L 195 40 A 15 15 0 0 0 175 20 L 35 240 Z"
+                                            fill="#020617" opacity="0.15" transform="translate(10, 10)" />
+
+                                        <!-- Cuerpo principal de la pluma -->
+                                        <path d="M 40 250 L 180 50 A 12 12 0 0 1 196 66 L 56 266 Z"
+                                            fill="url(#penGradient)"
+                                            filter="drop-shadow(0px 4px 8px rgba(236,72,153,0.3))" />
+                                        <!-- Tapa trasera metálica -->
+                                        <path d="M 170 60 L 180 50 A 12 12 0 0 1 196 66 L 186 76 Z" fill="#f472b6" />
+                                        <!-- Punta de la pluma (Cono de agarre) -->
+                                        <path d="M 40 250 L 56 266 L 20 280 Z" fill="#1e293b" />
+                                        <!-- Punta de metal/Plumilla que toca el papel -->
+                                        <path d="M 25 275 L 30 270 L 15 285 Z" fill="#e2e8f0" />
+
+                                        <!-- Línea de brillo de la pluma -->
+                                        <line x1="65" y1="225" x2="155" y2="105" stroke="#ffffff" stroke-width="2"
+                                            opacity="0.4" stroke-linecap="round" />
+                                    </g>
+
+                                    <!-- COLA DE BRILLO / EFECTO DE EDICIÓN ACTIVA -->
+                                    <circle cx="425" cy="425" r="4" fill="#ec4899"
+                                        filter="drop-shadow(0px 0px 4px #ec4899)" />
+                                    <circle cx="445" cy="410" r="2" fill="#ec4899" opacity="0.6" />
+                                </svg>
+                                <!-- <img th:src="@{/img/revisionOrtigrafica.jpg}" alt="Revisión gramatical"> -->
+                            </div>
+                            <p>Detecta errores gramaticales, ortograficos y de puntuacion, dandoles claridad a tus
+                                textos.
+                            </p>
+
+                        </div>
+                        <div class="servicio-tag">En desarrollo</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="nosotros-section fade-section" id="about">
+            <div class="nosotros-inner">
+                <div class="nosotros-texto">
+                    <p class="section-eyebrow">Sobre nosotros</p>
+                    <h2 class="section-title">Una plataforma hecha para la integridad académica</h2>
+                    <p>
+                        Somos un equipo dedicado a garantizar la autenticidad e integridad de documentos académicos
+                        y profesionales. Nuestro objetivo: brindar herramientas tecnológicas avanzadas que permitan
+                        detectar
+                        plagio, verificar fuentes y mantener los más altos estándares de originalidad.
+                    </p>
+                    <p>
+                        Contamos con buena tecnologia en análisis textual para ofrecerte la mejor
+                        experiencia, completamente gratis.
+                    </p>
+
+                    <div class="nosotros-stats">
+                        <div class="n-stat">
+                            <span class="n-stat-num counter-anim" data-target="90">0</span><span>%</span>
+                            <span class="n-stat-label">Precisión</span>
+                        </div>
+                        <div class="n-stat">
+                            <span class="n-stat-num counter-anim" data-target="10">0</span><span>+</span>
+                            <span class="n-stat-label">Análisis realizados</span>
+                        </div>
+                        <div class="n-stat">
+                            <span class="n-stat-num counter-anim" data-target="0">0</span><span>+</span>
+                            <span class="n-stat-label">Años de experiencia</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nosotros-visual">
+                    <div class="nosotros-ilustracion">
+                        <img th:src="@{/img/EidoxS.svg}" alt="eidox logo" height="280">
+                        <div class="ilus-glow"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+</body>
+
+</html>

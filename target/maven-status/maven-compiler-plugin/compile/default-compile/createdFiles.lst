@@ -1,0 +1,12 @@
+utp\eidox\service\PlagioService.class
+utp\eidox\controller\AnalisisController.class
+utp\eidox\config\ConfiguracionSecurity.class
+utp\eidox\model\Usuario.class
+utp\eidox\repository\UsuarioRepository.class
+utp\eidox\service\ExtraccionTikaService.class
+utp\eidox\repository\DocumentoRepository.class
+utp\eidox\PlagiodetectApplication.class
+utp\eidox\model\Analisis.class
+utp\eidox\controller\homeController.class
+utp\eidox\model\Documento.class
+utp\eidox\repository\AnalisisRepository.class

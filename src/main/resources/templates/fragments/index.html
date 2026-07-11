@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" th:fragment="base(fragmento)">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eidox | detector de plagio</title>
+    <link rel="icon" href="img/Eidox-face.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="stylesheet" th:href="@{/css/estiloAnalisis.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <header>
+        <nav class="navbar navbarra" id="navbar">
+            <div class="row row-head w-100">
+                <div class="col-8 d-flex ">
+                    <a th:href="@{inicio#}" class="d-flex justify-content-center gap-2 logo-nav">
+                        <div class="ps-4 d-flex gap-1 align-items-center">
+                            <img src="/img/Eidox-face-sf.svg" alt="logo" height="25">
+                            <strong>Eidox</strong>
+                        </div>
+                    </a>
+                    <div class="menu-central desktop-only-menu">
+                        <ul class="nav justify-content-center">
+                            <li class="nav-item"><a class="nav-link" th:href="@{/inicio#analisis}">Análisis</a></li>
+                            <li class="nav-item"><a class="nav-link" th:href="@{/inicio#about}">Nosotros</a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link btn dropdown-toggle" role="btn" data-bs-toggle="dropdown"
+                                    href="#">Servicios</a>
+                                <ul class="dropdown-menu">
+                                    <li><a th:href="@{/inicio#serviciosNuevos}" class="dropdown-item">Detección
+                                            IA</a></li>
+                                    <li><a th:href="@{/inicio#serviciosNuevos}" class="dropdown-item">Verificación
+                                            Bibliográfica</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-4 d-flex justify-content-end gap-4 desktop-only-menu">
+                    <button class="d-flex align-items-center btn-theme" onclick="modoOscuro()"
+                        style="border:none;background:none;cursor:pointer;padding:0;">
+                        <img id="theme-icon" src="img/BxsMoon.svg" alt="Toggle theme" height="25">
+                    </button>
+                    <button class="btn-login">Iniciar sesión</button>
+                </div>
+
+                <div class="mobile-nav-bar">
+                    <a th:href="@{inicio#}" class="d-flex justify-content-center gap-2 logo-nav mobile-logo">
+                        <div class="d-flex gap-1 align-items-center">
+                            <img src="/img/Eidox-face-sf.svg" alt="logo" height="25">
+                            <strong>Eidox</strong>
+                        </div>
+                    </a>
+
+                    <div class="mobile-nav-actions">
+                        <button class="btn-login mobile-login-btn"><i class="bi bi-star"></i> Premium </button>
+                        <button class="nav-hamburger" id="navToggle" type="button" aria-controls="mobileMenu"
+                            aria-expanded="false" aria-label="Abrir menú">
+                            <i class="bi bi-list"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mobile-menu-backdrop" id="navBackdrop" hidden></div>
+                <aside class="mobile-menu-panel" id="mobileMenu" aria-hidden="true">
+                    <div class="mobile-menu-header">
+                        <div>
+                            <span class="mobile-menu-kicker">Menú</span>
+                            <strong>Eidox</strong>
+                        </div>
+                        <button class="mobile-menu-close" id="navClose" type="button" aria-label="Cerrar menú">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <nav class="mobile-menu-nav">
+                        <a class="mobile-menu-link" th:href="@{/inicio#analisis}">Análisis</a>
+                        <a class="mobile-menu-link" th:href="@{/inicio#about}">Nosotros</a>
+
+                        <div class="mobile-menu-group">
+                            <span class="mobile-menu-group-title">Servicios</span>
+                            <a class="mobile-menu-sublink" th:href="@{/inicio#serviciosNuevos}">Detección IA</a>
+                            <a class="mobile-menu-sublink" th:href="@{/inicio#serviciosNuevos}">Verificación
+                                Bibliográfica</a>
+                        </div>
+
+                        <button class="mobile-theme-toggle" id="mobileThemeToggle" type="button" onclick="modoOscuro()">
+                            <img id="theme-icon-mobile" src="img/BxsMoon.svg" alt="Modo oscuro" height="22">
+                            <span id="mobileThemeLabel">Modo oscuro</span>
+                        </button>
+                    </nav>
+                </aside>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div th:replace="${fragmento}"></div>
+    </main>
+
+    <footer class="footer-new">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="d-flex align-items-center gap-2 mb-3 justify-content-center">
+                    <img src="/img/Eidox-face-sf.svg" alt="logo" height="25">
+                    <span class="footer-brand-name">Eidox</span>
+                </div>
+                <p>Garantiza la autenticidad de tus documentos con tecnología, libre y accesible para todos.
+                </p>
+                <div class="footer-socials">
+                    <a href="#" title="Facebook"><i class="bi bi-facebook"></i></a>
+                    <a href="#" title="Twitter"><i class="bi bi-twitter"></i></a>
+                    <a href="#" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                    <a href="#" title="Instagram"><i class="bi bi-instagram"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-links">
+                <h6>Plataforma</h6>
+                <ul>
+                    <li><a href="#analisis">Análisis de Plagio</a></li>
+                    <li><a href="#about">Sobre Nosotros</a></li>
+                    <li><a href="#serviciosNuevos">Servicios</a></li>
+                    <li><a href="#">Contacto</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h6>Servicios</h6>
+                <ul>
+                    <li><a href="#">Detección de IA</a></li>
+                    <li><a href="#">Verificación Bibliográfica</a></li>
+                    <li><a href="#">Análisis de Originalidad</a></li>
+                    <li><a href="#">Revisión gramatical</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h6>Contacto</h6>
+                <ul>
+                    <li><a href="mailto:infodrunkjuly@gmail.com"><i
+                                class="bi bi-envelope me-1"></i>infoeidox@gmail.com</a></li>
+                    <li><a href="#"><i class="bi bi-telephone me-1"></i> +51 987654321</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 Eidox. Todos los derechos reservados. &nbsp;|&nbsp;
+                <a href="#">Política de Privacidad</a> &nbsp;|&nbsp;
+                <a href="#">Términos y Condiciones</a>
+            </p>
+        </div>
+    </footer>
+
+    <script th:src="@{/js/app.js}"></script>
+    <script th:src="@{/js/colorGenerator.js}"></script>
+    <script th:src="@{/js/analisis.js}"></script>
+
+
+</body>
+
+</html>

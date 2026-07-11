@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-PlagiodetectApplication<plagiodetect>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "utp.eidox.PlagiodetectApplication",
+            "projectName": "plagiodetect",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
