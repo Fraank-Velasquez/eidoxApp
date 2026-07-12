@@ -128,11 +128,6 @@ function obtenerNombreArchivoDescarga(respuesta) {
     return coincidencia ? coincidencia[1] : 'reporte_originalidad.pdf';
 }
 
-/**
- * Punto de entrada principal.
- * Llamar con los datos reales del backend.
- * @param {Object} datos
- */
 function renderizarResultado(datos) {
     datosAnalisisActuales = datos;
     actualizarTarjetasResumen(datos);
@@ -152,7 +147,6 @@ function actualizarTarjetasResumen(datos) {
     animarContador('numeroPalabras', totalPalabras);
     animarContador('numeroOriginal', 100 - porcentaje);
 
-    // Nivel de riesgo
     const elNivel = document.getElementById('nivelPlagio');
     if (elNivel) {
         const { texto, color } = calcularNivelRiesgo(porcentaje);
@@ -160,7 +154,6 @@ function actualizarTarjetasResumen(datos) {
         elNivel.style.color = color;
     }
 
-    // Medidor circular SVG
     animarMedidorCircular(porcentaje);
 }
 
@@ -187,7 +180,6 @@ function animarMedidorCircular(porcentaje) {
         circulo.style.strokeDashoffset = desplazamiento;
     }, 200);
 
-    // Contador numérico animado
     animarContadorDirecto(numEl, porcentaje, 1400);
 }
 
@@ -278,9 +270,6 @@ function construirTextoHighlighted(textoOriginal, fuentes) {
 
     textoHtml = escaparHtml(textoHtml);
 
-    // Ordenamos por longitud descendente: si un fragmento largo contiene a uno más corto
-    // (p. ej. dos fuentes que comparten un tramo), procesamos primero el largo para no
-    // "cortarlo" a la mitad con el span de uno más pequeño.
     const entradasOrdenadas = Object.entries(mapaReemplazos)
         .sort((a, b) => b[0].length - a[0].length);
 
@@ -297,8 +286,6 @@ function construirTextoHighlighted(textoOriginal, fuentes) {
             marca = `<span class="marca-plagio" data-fuente="${indice}" title="Coincidencia con: ${escaparAtributo(fuentes[indice].nombre)}">${fragmentoEsc}</span>`;
         }
 
-        // split/join en vez de replace(): cubre TODAS las ocurrencias literales del fragmento,
-        // no solo la primera (por si el mismo tramo de texto se repite en el documento).
         textoHtml = textoHtml.split(fragmentoEsc).join(marca);
     });
 
@@ -312,7 +299,6 @@ function construirTextoHighlighted(textoOriginal, fuentes) {
         });
     });
 }
-
 
 function construirListaFuentes(fuentes) {
     const lista = document.getElementById('listaFuentes');
@@ -357,21 +343,21 @@ function actualizarContadorFuentes(total) {
 let indiceFuenteActiva = null;
 
 function activarFuente(indice) {
-    // Si ya está activa, desactivar (toggle)
+    // Si ya está activa, se desactiva
     if (indiceFuenteActiva === indice) {
         desactivarFuentes();
         return;
     }
     indiceFuenteActiva = indice;
 
-    // Texto: atenuar todas excepto las del índice activo
+    // atenuar todas excepto las del índice activo
     document.querySelectorAll('.marca-plagio').forEach(marca => {
         const estaFuente = parseInt(marca.dataset.fuente) === indice;
         marca.classList.toggle('activa', estaFuente);
         marca.classList.toggle('atenuada', !estaFuente);
     });
 
-    // Tarjetas: resaltar la activa
+    // resaltar la activa
     document.querySelectorAll('.tarjeta-fuente').forEach(tarjeta => {
         tarjeta.classList.toggle('activa', parseInt(tarjeta.dataset.indice) === indice);
     });
@@ -399,19 +385,13 @@ function filtrarPorFuente(indice) {
     activarFuente(indice);
 }
 
-/**
- * Calcula un color de borde oscuro basado en el color de fondo
- * Se usa para bordes de tarjetas y elementos visuales
- * @param {string} colorFondo - Color en formato hex
- * @returns {string} Color oscuro en formato hex
- */
 function calcularColorBorde(colorFondo) {
-    // Extraer valores RGB del color hex
+   
     const r = parseInt(colorFondo.slice(1, 3), 16);
     const g = parseInt(colorFondo.slice(3, 5), 16);
     const b = parseInt(colorFondo.slice(5, 7), 16);
 
-    // Calcular luminancia
+   
     const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
     // Si es claro, oscurecer; si es oscuro, aclarar
@@ -462,10 +442,6 @@ function escaparHtml(texto) {
 function escaparAtributo(texto) {
     return texto.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-
-
-//////////////////////////
-
 
 const inputArchivo = document.getElementById('archivo');
 const botonAnalizar = document.getElementById('btnAnalizar');

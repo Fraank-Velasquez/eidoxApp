@@ -52,8 +52,8 @@
                         style="border:none;background:none;cursor:pointer;padding:0;">
                         <img id="theme-icon" src="img/BxsMoon.svg" alt="Toggle theme" height="25">
                     </button>
-                    <button class="btn-login "><img th:src="@{/img\FluentPremium16Filled.svg}" alt="" height="19">
-                        <span>Ser premium</span>
+                    <button class="btn-premium" id="btnSerPremium" type="button" onclick="abrirModalPremium()">
+                        <i class="bi bi-gem"></i> Ser premium
                     </button>
                 </div>
 
@@ -66,8 +66,8 @@
                     </a>
 
                     <div class="mobile-nav-actions">
-                        <button class="btn-login "><img th:src="@{/img\FluentPremium16Filled.svg}" alt="" height="19">
-                            <span>Ser premium</span>
+                        <button class="btn-premium" id="btnSerPremium" type="button" onclick="abrirModalPremium()">
+                            <i class="bi bi-gem"></i> Ser premium
                         </button>
                         <button class="nav-hamburger" id="navToggle" type="button" aria-controls="mobileMenu"
                             aria-expanded="false" aria-label="Abrir menú">
@@ -168,9 +168,68 @@
         </div>
     </footer>
 
+    <div class="modal-premium-backdrop" id="modalPremiumBackdrop" hidden>
+        <div class="modal-premium" role="dialog" aria-modal="true" aria-labelledby="modalPremiumTitulo">
+
+            <button class="modal-premium-cerrar" id="modalPremiumCerrar" type="button" aria-label="Cerrar">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+            <div class="modal-premium-header">
+                <span class="modal-premium-icono"><i class="bi bi-gem"></i></span>
+                <div>
+                    <h3 id="modalPremiumTitulo">Precios de Eidox premium </h3>
+                    <p>Desbloquea todo el poder para el analisis de documentos sin límites.</p>
+                </div>
+            </div>
+
+            <div class="modal-premium-chips">
+                <span class="modal-premium-chip"><i class="bi bi-check-circle-fill"></i> Búsqueda profunda </span>
+                <span class="modal-premium-chip"><i class="bi bi-check-circle-fill"></i> Informes precisos</span>
+                <span class="modal-premium-chip"><i class="bi bi-check-circle-fill"></i> Soporte prioritario</span>
+                <span class="modal-premium-chip"><i class="bi bi-check-circle-fill"></i> Sin anuncios</span>
+            </div>
+
+            <div class="modal-premium-toggle">
+                <button class="modal-premium-toggle-opcion activo" type="button">Mensual</button>
+                <button class="modal-premium-toggle-opcion" type="button">Anual <span
+                        class="modal-premium-descuento">-20%</span></button>
+            </div>
+
+            <div class="modal-premium-planes">
+                <div class="plan-premium-tarjeta">
+                    <span class="plan-premium-nombre">Básico</span>
+                    <div class="plan-premium-precio">$4.99<span>/mes</span></div>
+                    <button class="plan-premium-btn" type="button">Mejorar</button>
+                    <ul class="plan-premium-lista">
+                        <li><i class="bi bi-check-lg"></i> 100 análisis al mes</li>
+                        <li><i class="bi bi-check-lg"></i> 50,000 palabras totales</li>
+                        <li class="plan-premium-lista-no"><i class="bi bi-x-lg"></i> Reportes en PDF</li>
+                    </ul>
+                </div>
+
+                <div class="plan-premium-tarjeta plan-premium-destacado">
+                    <span class="plan-premium-badge"><i class="bi bi-fire"></i> Popular</span>
+                    <span class="plan-premium-nombre">Pro</span>
+                    <div class="plan-premium-precio">$9.99<span>/mes</span></div>
+                    <button class="plan-premium-btn plan-premium-btn-destacado" type="button">Mejorar</button>
+                    <ul class="plan-premium-lista">
+                        <li><i class="bi bi-check-lg"></i> 250 análisis al mes</li>
+                        <li><i class="bi bi-check-lg"></i> 150,000 palabras totales</li>
+                        <li><i class="bi bi-check-lg"></i> Reportes en PDF</li>
+                    </ul>
+                </div>
+            </div>
+
+            <a href="#" class="modal-premium-ver-mas">Ver todas las funciones <i
+                    class="bi bi-box-arrow-up-right"></i></a>
+        </div>
+    </div>
+
     <script th:src="@{/js/app.js}"></script>
     <script th:src="@{/js/colorGenerator.js}"></script>
     <script th:src="@{/js/analisis.js}"></script>
+    <script th:src="@{/js/modalPremium.js}"></script>
 
 
 </body>

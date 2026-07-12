@@ -1,17 +1,9 @@
-/**
- * Generador de colores dinámicos para marcas de plagio
- * Genera colores HSL únicos y legibles para cada fuente
- */
-
 class GeneradorColor {
     constructor() {
         this.coloresCache = new Map();
         this.observarModoOscuro();
     }
 
-    /**
-     * Observar cambios en el modo oscuro para actualizar colores en tiempo real
-     */
     observarModoOscuro() {
         const observer = new MutationObserver(() => {
             this.coloresCache.clear();
@@ -24,11 +16,6 @@ class GeneradorColor {
         });
     }
 
-    /**
-     * Obtiene el color para una fuente específica
-     * @param {number} indice - Índice de la fuente (0, 1, 2, ...)
-     * @returns {Object} { fondo, texto } con valores hex
-     */
     obtenerColor(indice) {
         if (this.coloresCache.has(indice)) {
             return this.coloresCache.get(indice);
@@ -41,14 +28,8 @@ class GeneradorColor {
         return color;
     }
 
-    /**
-     * Genera color HSL basado en índice y modo
-     * @param {number} indice - Índice de la fuente
-     * @param {boolean} esModoOscuro - Si está en modo oscuro
-     * @returns {Object} { fondo, texto } con valores hex
-     */
     generarColorHSL(indice, esModoOscuro) {
-        // Distribuye el matiz uniformemente en el espectro (0-360)
+
         const matiz = (indice * 60) % 360;
 
         let saturacion, luminosidadFondo, luminosidadTexto;
@@ -85,11 +66,6 @@ class GeneradorColor {
         return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
     }
 
-    /**
-     * Obtiene color más vibrante/saturado (para barras, iconos, etc)
-     * @param {number} indice - Índice de la fuente
-     * @returns {string} Color hex más vibrante
-     */
     obtenerColorVibrante(indice) {
         const matiz = (indice * 60) % 360;
         const esModoOscuro = document.body.classList.contains('dark-mode');
@@ -98,11 +74,6 @@ class GeneradorColor {
         return this.hslAHex(matiz, saturacion, luminosidad);
     }
 
-    /**
-     * Obtiene un color con más presencia para bordes e iconos.
-     * @param {number} indice - Índice de la fuente
-     * @returns {string} Color hex para acentos
-     */
     obtenerColorBorde(indice) {
         const matiz = (indice * 60) % 360;
         const esModoOscuro = document.body.classList.contains('dark-mode');
@@ -111,10 +82,6 @@ class GeneradorColor {
         return this.hslAHex(matiz, saturacion, luminosidad);
     }
 
-    /**
-     * Aplica colores a múltiples elementos
-     * @param {Array} elementos - Array de elementos con propiedades { elemento, indice }
-     */
     aplicarColoresEnLote(elementos) {
         elementos.forEach(({ elemento, indice }) => {
             this.aplicarColorAlElemento(elemento, indice);
