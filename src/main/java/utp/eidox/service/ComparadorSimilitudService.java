@@ -21,7 +21,7 @@ import utp.eidox.util.OrdenadorQuicksort;
 @Service
 public class ComparadorSimilitudService {
 
-    private static final int TAMANO_N_GRAMA = 5;
+    private static final int TAMANO_N_GRAMA = 13;
 
     private final DocumentoRepository documentoRepository;
     private final PlagioService plagioService;
@@ -39,7 +39,7 @@ public class ComparadorSimilitudService {
 
         List<TokenConPosicion> tokensNuevoDocumento = plagioService.tokenizarConPosiciones(textoOriginal);
         List<String> tokensNormalizadosNuevoDocumento = tokensNuevoDocumento.stream()
-                .map(token -> token.tokenNormalizado())
+                .map(token -> token.getTokenNormalizado())
                 .toList();
         List<String> nGramasNuevoDocumento = ordenadorQuicksort
                 .ordenar(plagioService.generarNGramas(tokensNormalizadosNuevoDocumento, TAMANO_N_GRAMA));
@@ -63,8 +63,8 @@ public class ComparadorSimilitudService {
             String fragmentoExacto = extraerFragmentoExacto(tokensNuevoDocumento, textoOriginal, nGramaNormalizado);
 
             for (ReferenciaDocumento referencia : referencias) {
-                AcumuladoFuente acumulado = fuentesEncontradas.computeIfAbsent(referencia.idDocumento(),
-                        clave -> new AcumuladoFuente(referencia.nombreDocumento(), referencia.tipoDocumento()));
+                AcumuladoFuente acumulado = fuentesEncontradas.computeIfAbsent(referencia.getIdDocumento(),
+                        clave -> new AcumuladoFuente(referencia.getNombreDocumento(), referencia.getTipoDocumento()));
 
                 acumulado.coincidencias++;
                 if (acumulado.fragmentoCoincidente == null) {
@@ -97,7 +97,7 @@ public class ComparadorSimilitudService {
 
             List<TokenConPosicion> tokensDocumento = plagioService
                     .tokenizarConPosiciones(documento.getContenidoTexto());
-            List<String> tokensNormalizados = tokensDocumento.stream().map(token -> token.tokenNormalizado()).toList();
+            List<String> tokensNormalizados = tokensDocumento.stream().map(token -> token.getTokenNormalizado()).toList();
             List<String> nGramasOrdenados = ordenadorQuicksort
                     .ordenar(plagioService.generarNGramas(tokensNormalizados, TAMANO_N_GRAMA));
 
@@ -158,15 +158,15 @@ public class ComparadorSimilitudService {
             boolean coincide = true;
 
             for (int offset = 0; offset < partes.length; offset++) {
-                if (!tokens.get(indice + offset).tokenNormalizado().equals(partes[offset])) {
+                if (!tokens.get(indice + offset).getTokenNormalizado().equals(partes[offset])) {
                     coincide = false;
                     break;
                 }
             }
 
             if (coincide) {
-                int inicio = tokens.get(indice).inicio();
-                int fin = tokens.get(indice + partes.length - 1).fin();
+                int inicio = tokens.get(indice).getInicio();
+                int fin = tokens.get(indice + partes.length - 1).getFin();
                 return textoOriginalCompleto.substring(inicio, fin).trim();
             }
         }

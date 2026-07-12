@@ -11,7 +11,6 @@ public class ArbolAVL {
         if (clave == null || clave.isBlank() || referencia == null) {
             return;
         }
-
         raiz = insertarRecursivo(raiz, clave, referencia);
     }
 

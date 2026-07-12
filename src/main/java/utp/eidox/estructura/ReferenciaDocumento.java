@@ -1,5 +1,18 @@
 package utp.eidox.estructura;
 
-public record ReferenciaDocumento(Long idDocumento, String nombreDocumento, String tipoDocumento,
-        String fragmentoCoincidente) {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+public class ReferenciaDocumento {
+    private Long idDocumento;
+    private String nombreDocumento;
+    private String tipoDocumento;
+    private String fragmentoCoincidente;
 }
+

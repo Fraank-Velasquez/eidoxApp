@@ -1,4 +1,17 @@
 package utp.eidox.service;
 
-public record TokenConPosicion(String tokenNormalizado, int inicio, int fin, String tokenOriginal) {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+public class TokenConPosicion {
+    private String tokenNormalizado;
+    private int inicio;
+    private int fin;
+    private String tokenOriginal;
 }
