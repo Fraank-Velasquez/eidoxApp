@@ -45,17 +45,18 @@
 
                 <div class="hero-stats reveal-up" style="--delay: 400ms">
                     <div class="stat-item">
-                        <span class="stat-number" data-target="0">0</span><span class="stat-suffix">%</span>
+                        <span class="stat-number" data-target="98">0</span><span class="stat-suffix">%</span>
                         <span class="stat-label">Precisión</span>
                     </div>
                     <div class="stat-divider"></div>
                     <div class="stat-item">
-                        <span class="stat-number" data-target="0">0</span><span class="stat-suffix">+</span>
+                        <span class="stat-number" th:attr="data-target=${totalDocumentosAnalizados}"
+                            data-target="0">0</span><span class="stat-suffix">+</span>
                         <span class="stat-label">Documentos analizados</span>
                     </div>
                     <div class="stat-divider"></div>
                     <div class="stat-item">
-                        <span class="stat-number" data-target="0">0</span><span class="stat-suffix">s</span>
+                        <span class="stat-number" data-target="3">0</span><span class="stat-suffix">s</span>
                         <span class="stat-label">Tiempo promedio</span>
                     </div>
                 </div>
@@ -642,11 +643,12 @@
 
                     <div class="nosotros-stats">
                         <div class="n-stat">
-                            <span class="n-stat-num counter-anim" data-target="90">0</span><span>%</span>
+                            <span class="n-stat-num counter-anim" data-target="98">0</span><span>%</span>
                             <span class="n-stat-label">Precisión</span>
                         </div>
                         <div class="n-stat">
-                            <span class="n-stat-num counter-anim" data-target="10">0</span><span>+</span>
+                            <span class="n-stat-num counter-anim"
+                                th:attr="data-target=${totalDocumentosAnalizados}">0</span><span>+</span>
                             <span class="n-stat-label">Análisis realizados</span>
                         </div>
                         <div class="n-stat">

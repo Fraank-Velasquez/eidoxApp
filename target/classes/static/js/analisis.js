@@ -1,4 +1,3 @@
-
 let datosAnalisisActuales = null;
 const CLAVE_RESULTADO_ANALISIS = 'eidox-resultado-analisis';
 
@@ -279,8 +278,15 @@ function construirTextoHighlighted(textoOriginal, fuentes) {
 
     textoHtml = escaparHtml(textoHtml);
 
-    Object.entries(mapaReemplazos).forEach(([fragmento, indice]) => {
+    // Ordenamos por longitud descendente: si un fragmento largo contiene a uno más corto
+    // (p. ej. dos fuentes que comparten un tramo), procesamos primero el largo para no
+    // "cortarlo" a la mitad con el span de uno más pequeño.
+    const entradasOrdenadas = Object.entries(mapaReemplazos)
+        .sort((a, b) => b[0].length - a[0].length);
+
+    entradasOrdenadas.forEach(([fragmento, indice]) => {
         const fragmentoEsc = escaparHtml(fragmento);
+        if (!fragmentoEsc || !textoHtml.includes(fragmentoEsc)) return;
 
         let marca;
 
@@ -291,7 +297,9 @@ function construirTextoHighlighted(textoOriginal, fuentes) {
             marca = `<span class="marca-plagio" data-fuente="${indice}" title="Coincidencia con: ${escaparAtributo(fuentes[indice].nombre)}">${fragmentoEsc}</span>`;
         }
 
-        textoHtml = textoHtml.replace(fragmentoEsc, marca);
+        // split/join en vez de replace(): cubre TODAS las ocurrencias literales del fragmento,
+        // no solo la primera (por si el mismo tramo de texto se repite en el documento).
+        textoHtml = textoHtml.split(fragmentoEsc).join(marca);
     });
 
     textoHtml = textoHtml.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');

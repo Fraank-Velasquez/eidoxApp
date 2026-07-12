@@ -3,20 +3,17 @@ package utp.eidox.service;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import utp.eidox.model.Documento;
-import utp.eidox.model.Analisis;
-import utp.eidox.repository.AnalisisRepository;
-import utp.eidox.repository.DocumentoRepository;
-import utp.eidox.service.dto.FuenteCoincidencia;
-import utp.eidox.service.dto.ResultadoComparacion;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Font;
@@ -26,6 +23,14 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+
+import lombok.RequiredArgsConstructor;
+import utp.eidox.model.Analisis;
+import utp.eidox.model.Documento;
+import utp.eidox.repository.AnalisisRepository;
+import utp.eidox.repository.DocumentoRepository;
+import utp.eidox.service.dto.FuenteCoincidencia;
+import utp.eidox.service.dto.ResultadoComparacion;
 
 @Service
 @RequiredArgsConstructor
@@ -47,11 +52,13 @@ public class AnalisisService {
         // 1. Extraer y validar origen del contenido
         if (archivo != null && !archivo.isEmpty()) {
             textoExtraido = extraccionService.extraerTexto(archivo);
-            nombreArchivo = archivo.getOriginalFilename() != null ? archivo.getOriginalFilename() : "documento-sin-nombre";
+            nombreArchivo = archivo.getOriginalFilename() != null ? archivo.getOriginalFilename()
+                    : "documento-sin-nombre";
             tipoMime = archivo.getContentType() != null ? archivo.getContentType() : "application/octet-stream";
         } else if (textoAnalisis != null && !textoAnalisis.isBlank()) {
             textoExtraido = textoAnalisis;
-            nombreArchivo = "texto_manual_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".txt";
+            nombreArchivo = "texto_manual_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+                    + ".txt";
             tipoMime = "text/plain";
         } else {
             throw new IllegalArgumentException("Debes subir un archivo o escribir un texto de al menos 70 palabras.");
@@ -61,12 +68,15 @@ public class AnalisisService {
             throw new IllegalArgumentException("El texto debe tener al menos 70 palabras para ser analizado.");
         }
 
-        // 2. CONTROL DE DUPLICADOS: Verificar si el documento ya existe en el repositorio local
+        // 2. CONTROL DE DUPLICADOS: Verificar si el documento ya existe en el
+        // repositorio local
         Optional<Documento> documentoExistente = documentoRepository.findByNombreArchivo(nombreArchivo);
         Documento documentoGuardado;
+        boolean esDocumentoNuevo = documentoExistente.isEmpty();
 
         if (documentoExistente.isPresent()) {
-            // Si el documento ya existe, NO lo guardamos de nuevo. Reutilizamos el registro existente.
+            // Si el documento ya existe, NO lo guardamos de nuevo. Reutilizamos el registro
+            // existente.
             documentoGuardado = documentoExistente.get();
         } else {
             // Si el documento es completamente nuevo, procedemos a registrarlo en la BD
@@ -80,7 +90,13 @@ public class AnalisisService {
         }
 
         // 3. Ejecutar algoritmo matemático de detección de plagio
-        ResultadoComparacion resultado = comparadorSimilitudService.compararTexto(textoExtraido, documentoGuardado.getIdDocumento());
+        // Solo excluimos el documento del índice cuando es recién insertado en este
+        // análisis.
+        // Si ya existía previamente en la BD, se debe comparar contra TODO el
+        // repositorio
+        // (incluyendo ese propio registro) para poder detectar coincidencias del 100%.
+        Long idAExcluir = esDocumentoNuevo ? documentoGuardado.getIdDocumento() : null;
+        ResultadoComparacion resultado = comparadorSimilitudService.compararTexto(textoExtraido, idAExcluir);
         // 4. Guardar bitácora del análisis en la BD
         Analisis analisis = new Analisis();
         analisis.setPorcentaje(resultado.getPorcentajePlagio());
@@ -101,23 +117,30 @@ public class AnalisisService {
 
     public byte[] generarReportePdf(Map<String, Object> datosAnalisis) throws DocumentException {
         ResultadoComparacion resultado = convertirResultado(datosAnalisis);
-        String nombreDocumento = datosAnalisis.get("nombreDocumento") != null ? String.valueOf(datosAnalisis.get("nombreDocumento")) : "Documento analizado";
+        String nombreDocumento = datosAnalisis.get("nombreDocumento") != null
+                ? String.valueOf(datosAnalisis.get("nombreDocumento"))
+                : "Documento analizado";
         return construirReportePdf(resultado, nombreDocumento);
     }
 
-
     private int contarPalabras(String texto) {
-        if (texto == null || texto.isBlank()) return 0;
+        if (texto == null || texto.isBlank())
+            return 0;
         return texto.trim().split("\\s+").length;
     }
 
     @SuppressWarnings("unchecked")
     private ResultadoComparacion convertirResultado(Map<String, Object> datos) {
-        double porcentaje = datos.get("porcentajePlagio") instanceof Number ? ((Number) datos.get("porcentajePlagio")).doubleValue() : Double.parseDouble(String.valueOf(datos.get("porcentajePlagio")));
-        int totalPalabras = datos.get("totalPalabras") instanceof Number ? ((Number) datos.get("totalPalabras")).intValue() : Integer.parseInt(String.valueOf(datos.get("totalPalabras")));
+        double porcentaje = datos.get("porcentajePlagio") instanceof Number
+                ? ((Number) datos.get("porcentajePlagio")).doubleValue()
+                : Double.parseDouble(String.valueOf(datos.get("porcentajePlagio")));
+        int totalPalabras = datos.get("totalPalabras") instanceof Number
+                ? ((Number) datos.get("totalPalabras")).intValue()
+                : Integer.parseInt(String.valueOf(datos.get("totalPalabras")));
         String textoOriginal = datos.get("textoOriginal") != null ? String.valueOf(datos.get("textoOriginal")) : "";
         List<Map<String, Object>> fuentesMapa = (List<Map<String, Object>>) datos.get("fuentes");
-        List<FuenteCoincidencia> fuentes = fuentesMapa == null ? Collections.emptyList() : fuentesMapa.stream().map(this::mapearFuente).toList();
+        List<FuenteCoincidencia> fuentes = fuentesMapa == null ? Collections.emptyList()
+                : fuentesMapa.stream().map(this::mapearFuente).toList();
         return new ResultadoComparacion(porcentaje, totalPalabras, textoOriginal, fuentes);
     }
 
@@ -126,12 +149,19 @@ public class AnalisisService {
         String nombre = fuente.get("nombre") != null ? String.valueOf(fuente.get("nombre")) : "Sin nombre";
         String tipo = fuente.get("tipo") != null ? String.valueOf(fuente.get("tipo")) : "desconocido";
         String url = fuente.get("url") != null ? String.valueOf(fuente.get("url")) : null;
-        double porcentaje = fuente.get("porcentaje") instanceof Number ? ((Number) fuente.get("porcentaje")).doubleValue() : Double.parseDouble(String.valueOf(fuente.getOrDefault("porcentaje", 0)));
-        String fragmentoCoincidente = fuente.get("fragmentoCoincidente") != null ? String.valueOf(fuente.get("fragmentoCoincidente")) : "";
-        List<String> fragmentosEnTexto = fuente.get("fragmentosEnTexto") == null ? Collections.emptyList() : ((List<Object>) fuente.get("fragmentosEnTexto")).stream().map(String::valueOf).toList();
+        double porcentaje = fuente.get("porcentaje") instanceof Number
+                ? ((Number) fuente.get("porcentaje")).doubleValue()
+                : Double.parseDouble(String.valueOf(fuente.getOrDefault("porcentaje", 0)));
+        String fragmentoCoincidente = fuente.get("fragmentoCoincidente") != null
+                ? String.valueOf(fuente.get("fragmentoCoincidente"))
+                : "";
+        List<String> fragmentosEnTexto = fuente.get("fragmentosEnTexto") == null ? Collections.emptyList()
+                : ((List<Object>) fuente.get("fragmentosEnTexto")).stream().map(String::valueOf).toList();
         return new FuenteCoincidencia(nombre, tipo, url, porcentaje, fragmentoCoincidente, fragmentosEnTexto);
     }
-    private byte[] construirReportePdf(ResultadoComparacion resultado, String nombreDocumento) throws DocumentException {
+
+    private byte[] construirReportePdf(ResultadoComparacion resultado, String nombreDocumento)
+            throws DocumentException {
         ByteArrayOutputStream salida = new ByteArrayOutputStream();
         Document document = new Document(PageSize.A4, 36, 36, 40, 40);
         PdfWriter.getInstance(document, salida);
@@ -144,12 +174,15 @@ public class AnalisisService {
         document.open();
         document.add(new Paragraph("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tREPORTE DETALLADO DE ORIGINALIDAD", titulo));
         document.add(new Paragraph(" "));
-        document.add(new Paragraph("Fecha: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")), texto));
+        document.add(new Paragraph(
+                "Fecha: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")), texto));
         document.add(new Paragraph("Documento: " + nombreDocumento, texto));
         document.add(new Paragraph(" "));
         document.add(new Paragraph("Resumen", subtitulo));
-        document.add(new Paragraph("Porcentaje final de similitud: " + String.format(Locale.US, "%.2f", resultado.getPorcentajePlagio()) + "%", textoNegrita));
-        document.add(new Paragraph("Contenido original estimado: " + String.format(Locale.US, "%.2f", 100.0 - resultado.getPorcentajePlagio()) + "%", texto));
+        document.add(new Paragraph("Porcentaje final de similitud: "
+                + String.format(Locale.US, "%.2f", resultado.getPorcentajePlagio()) + "%", textoNegrita));
+        document.add(new Paragraph("Contenido original estimado: "
+                + String.format(Locale.US, "%.2f", 100.0 - resultado.getPorcentajePlagio()) + "%", texto));
         document.add(new Paragraph("Total de palabras analizadas: " + resultado.getTotalPalabras(), texto));
         document.add(new Paragraph("Total de fuentes encontradas: " + resultado.getFuentes().size(), texto));
         document.add(new Paragraph(" "));
@@ -157,7 +190,7 @@ public class AnalisisService {
         document.add(new Paragraph("Fuentes originales encontradas en el repositorio local", subtitulo));
         document.add(new Paragraph(" "));
 
-        PdfPTable tabla = new PdfPTable(new float[]{0.7f, 2.4f, 1.2f, 1.2f, 2.5f});
+        PdfPTable tabla = new PdfPTable(new float[] { 0.7f, 2.4f, 1.2f, 1.2f, 2.5f });
         tabla.setWidthPercentage(100);
         agregarCabeceraTabla(tabla, "#");
         agregarCabeceraTabla(tabla, "Fuente");
@@ -166,7 +199,8 @@ public class AnalisisService {
         agregarCabeceraTabla(tabla, "Referencia");
 
         if (resultado.getFuentes().isEmpty()) {
-            PdfPCell vacio = new PdfPCell(new Phrase("No se encontraron coincidencias en el repositorio local.", texto));
+            PdfPCell vacio = new PdfPCell(
+                    new Phrase("No se encontraron coincidencias en el repositorio local.", texto));
             vacio.setColspan(5);
             vacio.setPadding(6f);
             tabla.addCell(vacio);
@@ -181,10 +215,10 @@ public class AnalisisService {
             }
         }
         document.add(tabla);
-        for (int i = 0 ; i < 5; i++){
+        for (int i = 0; i < 5; i++) {
             document.add(new Paragraph(" "));
         }
-        document.add(new Paragraph("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tFin del reporte \t ©  Eidox 2026", textoNegrita));
+        document.add(new Paragraph("Fin del reporte \t ©  Eidox 2026", textoNegrita));
         document.close();
         return salida.toByteArray();
     }

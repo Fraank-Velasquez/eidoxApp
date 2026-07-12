@@ -123,6 +123,9 @@ header {
     position: relative;
     overflow: hidden;
     transition: opacity .2s, transform .15s;
+    display: flex;
+    gap: .5rem;
+    justify-content: center;
 }
 
 .btn-login:hover {
