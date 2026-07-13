@@ -5,12 +5,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
+
+import lombok.RequiredArgsConstructor;
 import utp.eidox.service.AnalisisService;
 
 @RestController
@@ -43,7 +51,7 @@ public class AnalisisController {
             Map<String, Object> respuesta = analisisService.procesarAnalisis(archivo, textoAnalisis);
             return ResponseEntity.ok(respuesta);
         } catch (IllegalArgumentException e) {
-            // Captura errores controlados (menos de 70 palabras, sin datos de entrada, etc.)
+            // Capturar errores (menos de 70 palabras, sin datos de entrada
             Map<String, Object> respuesta = new LinkedHashMap<>();
             respuesta.put("exito", false);
             respuesta.put("mensaje", e.getMessage());
@@ -55,6 +63,14 @@ public class AnalisisController {
             respuesta.put("mensaje", "Error al procesar el documento: " + e.getMessage());
             return ResponseEntity.badRequest().body(respuesta);
         }
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> manejarArchivoDemasiadoGrande(MaxUploadSizeExceededException e) {
+        Map<String, Object> respuesta = new LinkedHashMap<>();
+        respuesta.put("exito", false);
+        respuesta.put("mensaje", "El archivo supera el tamaño máximo permitido de 10 MB.");
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(respuesta);
     }
 
     @PostMapping(value = "/reporte/descargar-pdf", consumes = MediaType.APPLICATION_JSON_VALUE)

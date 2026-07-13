@@ -1,79 +1,86 @@
-# Documentación del sistema Eidox
+# Documentación del Eidox | Detector de plagio
+
+> Última sincronización con el proyecto terminado
 
 ## 1. Propósito del sistema
 
-Eidox es una aplicación web desarrollada con Spring Boot, Thymeleaf y JavaScript que permite analizar documentos y texto escrito para detectar similitudes con el repositorio local de documentos almacenados en la base de datos.
+Eidox es una aplicación web desarrollada con Spring Boot, Thymeleaf y JavaScript que permite analizar documentos y texto escrito para detectar similitudes con un repositorio local de documentos almacenados en MySQL.
 
 El objetivo principal del sistema es ayudar a identificar posible plagio u originalidad baja en un contenido, mostrando de forma visual:
 
-- el porcentaje final de similitud,
+- el porcentaje final de similitud (círculo animado + nivel de riesgo),
 - el porcentaje estimado de contenido original,
-- las fuentes encontradas,
-- los fragmentos coincidentes dentro del texto analizado,
-- y un reporte descargable en formato PDF o texto.
+- las fuentes encontradas en el repositorio local, con su propio porcentaje de aporte,
+- los fragmentos coincidentes resaltados dentro del texto analizado (de forma continua, no por ventanas sueltas),
+- y un reporte descargable en PDF con tabla de fuentes.
 
 ## 2. Vista general de la arquitectura
 
 El proyecto sigue una arquitectura web clásica por capas:
 
-- Capa de presentación: HTML, Thymeleaf, CSS y JavaScript.
-- Capa de control: controladores Spring MVC y REST.
-- Capa de servicio: lógica de extracción, tokenización y comparación.
-- Capa de persistencia: entidades JPA y repositorios.
-- Capa de soporte: estructuras de datos auxiliares, utilidades y cargadores de datos.
+- **Presentación**: HTML + Thymeleaf, CSS y JavaScript nativo (sin framework SPA).
+- **Control**: un controlador MVC (`homeController`) para las vistas, y un controlador REST (`AnalisisController`) para el flujo de análisis.
+- **Servicio**: extracción de texto, tokenización, comparación por n-gramas y generación de reportes PDF.
+- **Persistencia**: entidades JPA (`Usuario`, `Documento`, `Analisis`) sobre MySQL.
+- **Soporte / estructuras de datos**: `ArbolAVL`, `OrdenadorQuicksort`, `BuscadorBinario` — el contenido "académico" del curso de Estructura de Datos y Algoritmos.
 
 ```mermaid
 flowchart TD
-    U[Usuario] --> H[Vista inicio]
-    H --> J[JavaScript app.js / analisis.js]
-    J --> C[AnalisisController]
-    C --> E[ExtraccionTikaService]
-    C --> S[ComparadorSimilitudService]
-    S --> P[DocumentoRepository]
-    S --> A[Arbol AVL + utilidades]
-    C --> R[AnalisisRepository]
-    C --> V[Vista analisis]
-    V --> D[Descarga de reporte PDF o TXT]
+    U[Usuario] --> H[Vista /inicio]
+    H --> J["app.js: contador de palabras, validación, envío del formulario"]
+    J -->|POST /api/analisis/subir| C[AnalisisController]
+    C --> X[ExtraccionTikaService]
+    C --> AS[AnalisisService]
+    AS --> DR[DocumentoRepository]
+    AS --> S[ComparadorSimilitudService]
+    S --> AVL["ArbolAVL en memoria + Quicksort + BuscadorBinario"]
+    AS --> AR[AnalisisRepository]
+    C --> V["Vista /analisis (analisis.js)"]
+    V -->|POST /reporte/descargar-pdf| PDF[Generación de reporte PDF con OpenPDF]
 ```
 
 ## 3. Flujo funcional completo
 
-El recorrido del sistema se entiende mejor en este orden:
-
-1. El usuario entra a la página principal.
-2. En la sección de análisis, sube un archivo PDF o DOCX, o pega texto manual.
-3. El frontend valida que exista contenido suficiente.
-4. El formulario se envía por `fetch` al backend.
-5. El backend extrae el texto del archivo o usa el texto manual.
-6. El documento se guarda en la base de datos.
-7. El servicio de comparación analiza el texto contra el repositorio local.
-8. El backend devuelve un JSON con el porcentaje de similitud y las fuentes encontradas.
-9. El frontend redirige a la vista de resultados.
-10. La vista de resultados renderiza el análisis de forma visual.
-11. El usuario puede descargar el reporte detallado en PDF.
+1. El usuario entra a la página principal (`/` o `/inicio`).
+2. En la sección de análisis, sube un archivo PDF/Word o pega texto manual (mínimo 70 palabras si es texto).
+3. `app.js` valida en el cliente que exista contenido suficiente y arma un `FormData`.
+4. El formulario se envía por `fetch` a `POST /api/analisis/subir`.
+5. `AnalisisService` extrae el texto (Tika) o usa el texto manual directamente.
+6. **Control de duplicados**: si ya existe un documento con el mismo nombre de archivo, se reutiliza ese registro (no se duplica en la BD); si es nuevo, se guarda.
+7. `ComparadorSimilitudService` compara el texto contra el repositorio local usando n-gramas + Árbol AVL.
+8. Se guarda una fila en `Analisis` con el porcentaje y las fuentes (serializadas en JSON).
+9. El backend devuelve un JSON con porcentaje, fuentes y el texto original.
+10. `analisis.js` guarda ese JSON en `sessionStorage` y redirige a `/analisis`.
+11. La vista `/analisis` recupera el resultado del `sessionStorage` y lo renderiza: medidor circular, barra de desglose por fuente, texto resaltado y tarjetas de fuentes.
+12. El usuario puede descargar un reporte PDF con el resumen y la tabla de fuentes.
 
 ```mermaid
 sequenceDiagram
     participant U as Usuario
-    participant F as Frontend
-    participant B as Backend
+    participant F as Frontend (app.js / analisis.js)
+    participant C as AnalisisController
+    participant AS as AnalisisService
     participant X as ExtraccionTikaService
     participant S as ComparadorSimilitudService
-    participant DB as Base de datos
+    participant DB as MySQL
 
-    U->>F: Sube archivo o escribe texto
-    F->>B: POST /api/analisis/subir
-    B->>X: Extraer texto del archivo
-    B->>DB: Guardar Documento
-    B->>S: compararTexto(texto)
-    S->>DB: Leer documentos del repositorio
-    S-->>B: ResultadoComparacion
-    B->>DB: Guardar Analisis
-    B-->>F: JSON con porcentaje y fuentes
-    F->>F: Redirigir a /analisis
-    U->>F: Descargar reporte PDF
-    F->>B: POST /api/analisis/reporte/descargar-pdf
-    B-->>F: Archivo PDF
+    U->>F: Sube archivo o escribe texto (min. 70 palabras)
+    F->>C: POST /api/analisis/subir
+    C->>AS: procesarAnalisis(archivo, texto)
+    AS->>X: extraerTexto(archivo)  [si aplica]
+    AS->>DB: findByNombreArchivo (evita duplicar)
+    AS->>DB: save(Documento) [solo si es nuevo]
+    AS->>S: compararTexto(texto, idAExcluir)
+    S->>DB: findAll() documentos del repositorio
+    S->>S: construir ArbolAVL con n-gramas (Quicksort + AVL)
+    S-->>AS: ResultadoComparacion (porcentaje, fuentes, fragmentos)
+    AS->>DB: save(Analisis)
+    AS-->>C: JSON de respuesta
+    C-->>F: 200 OK + JSON
+    F->>F: guarda en sessionStorage y redirige a /analisis
+    U->>F: clic en "Descargar reporte PDF"
+    F->>C: POST /api/analisis/reporte/descargar-pdf
+    C-->>F: application/pdf (bytes)
 ```
 
 ## 4. Tecnologías utilizadas
@@ -81,44 +88,46 @@ sequenceDiagram
 ### Backend
 
 - Java 21
-- Spring Boot 4
+- Spring Boot 4 (`spring-boot-starter-parent` 4.0.6)
 - Spring Web MVC
 - Spring Data JPA
-- Spring Security
-- Thymeleaf
-- Apache Tika
-- OpenPDF
+- Spring Security (configurado en modo abierto, ver sección 7)
+- Thymeleaf (+ `thymeleaf-extras-springsecurity6`)
+- Apache Tika 3.3.0 (`tika-core` + `tika-parsers-standard-package`) — extracción de texto de PDF/Word
+- OpenPDF 2.0.3 (`com.lowagie.text`) — generación del reporte PDF
+- Lombok
+- Spring Boot DevTools (recarga en caliente durante desarrollo)
+- Bean Validation (`spring-boot-starter-validation`)
 
 ### Frontend
 
-- HTML5
-- CSS3
-- JavaScript nativo
-- Bootstrap 5
+- HTML5 + Thymeleaf (fragments para layout compartido)
+- CSS3 (variables de diseño reutilizables, modo claro/oscuro)
+- JavaScript nativo (sin frameworks: `app.js`, `analisis.js`, `colorGenerator.js`, `modalPremium.js`)
 - Bootstrap Icons
 
 ### Persistencia
 
-- MySQL o el motor configurado en `application.properties`
+- MySQL (`mysql-connector-j`), configurado en `application.properties`
 
 ## 5. Estructura del proyecto
 
 ### Paquetes principales
 
-- `config`: configuración de seguridad y carga de datos iniciales.
-- `controller`: controladores web y REST.
-- `model`: entidades JPA.
-- `repository`: acceso a datos.
-- `service`: lógica principal del negocio.
-- `service.dto`: objetos de transferencia de datos.
-- `estructura`: estructuras auxiliares como AVL.
-- `util`: utilidades de búsqueda y ordenamiento.
+- `config`: configuración de seguridad (`ConfiguracionSecurity`).
+- `controller`: controladores web (`homeController`) y REST (`AnalisisController`).
+- `model`: entidades JPA (`Usuario`, `Documento`, `Analisis`).
+- `repository`: acceso a datos (`UsuarioRepository`, `DocumentoRepository`, `AnalisisRepository`).
+- `service`: lógica principal del negocio (extracción, comparación, análisis, tokenización).
+- `service.dto`: objetos de transferencia de datos (`ResultadoComparacion`, `FuenteCoincidencia`).
+- `estructura`: estructuras de datos propias del curso (`ArbolAVL`, `NodoAVL`, `ReferenciaDocumento`).
+- `util`: utilidades de ordenamiento y búsqueda (`OrdenadorQuicksort`, `BuscadorBinario`).
 
 ## 6. Punto de entrada de la aplicación
 
 Archivo: [src/main/java/utp/eidox/PlagiodetectApplication.java](src/main/java/utp/eidox/PlagiodetectApplication.java)
 
-Este archivo contiene la clase principal con `@SpringBootApplication`. Su función es iniciar toda la aplicación Spring Boot.
+Contiene la clase principal con `@SpringBootApplication`, que arranca todo el contexto Spring.
 
 ```java
 SpringApplication.run(PlagiodetectApplication.class, args);
@@ -129,278 +138,317 @@ En una exposición puedes explicarlo así:
 - es el arranque del sistema,
 - carga el contexto de Spring,
 - detecta beans, controladores, servicios y repositorios,
-- y levanta el servidor web.
+- y levanta el servidor embebido (Tomcat) en el puerto configurado (`3000`).
 
 ## 7. Seguridad
 
 Archivo: [src/main/java/utp/eidox/config/ConfiguracionSecurity.java](src/main/java/utp/eidox/config/ConfiguracionSecurity.java)
 
-La configuración de seguridad actualmente permite todo el acceso sin autenticación y desactiva CSRF.
+```java
+http.csrf(csrf -> csrf.disable())
+    .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+```
 
-Eso significa que:
+Esto significa que:
 
 - cualquier ruta se puede consultar sin iniciar sesión,
-- el sistema está en modo abierto mientras se desarrolla,
-- el flujo de análisis funciona sin barreras de autenticación.
+- CSRF está desactivado (necesario porque el análisis se envía vía `fetch`/`FormData` sin token),
+- el sistema está en modo abierto mientras se desarrolla y se hacen las entregas del curso.
 
-Para exposición, esto se puede explicar como una decisión de desarrollo para facilitar pruebas internas y prototipado.
+Para exposición, esto se puede explicar como una decisión de desarrollo para facilitar pruebas internas y prototipado — el botón **"Ser premium"** del header (ver sección 16.4) es hoy solo una vitrina visual sin lógica de pago ni de roles todavía, coherente con este estado de seguridad abierto.
 
-## 8. Carga inicial de datos
+> **Nota de sincronización:** versiones previas de esta documentación mencionaban un componente `CargadorDatosIniciales` que insertaba documentos de ejemplo y corregía el esquema de la tabla `analisis` al arrancar. Ese componente **ya no existe** en el proyecto actual — el repositorio arranca vacío y el esquema se gestiona con `spring.jpa.hibernate.ddl-auto=update`. Si necesitas datos de ejemplo para una demo, hay que subirlos manualmente desde la interfaz.
 
-Archivo: [src/main/java/utp/eidox/config/CargadorDatosIniciales.java](src/main/java/utp/eidox/config/CargadorDatosIniciales.java)
+## 8. Entidades del dominio
 
-Este componente hace dos tareas al arrancar:
-
-### 8.1 Ajuste automático de base de datos
-
-Comprueba si existe la tabla `analisis` y si la columna `referencias_encontradas` es `LONGTEXT`.
-
-Si no lo es, intenta corregirla automáticamente.
-
-Esto es útil porque el sistema guarda en esa columna el JSON serializado de las fuentes encontradas.
-
-### 8.2 Documentos de ejemplo
-
-Si el repositorio de documentos está vacío, inserta varios documentos de muestra.
-
-Esto permite que el motor de similitud tenga una base sobre la que comparar desde el primer arranque.
-
-En una exposición puedes decir que este cargador asegura que la aplicación sea demostrable sin depender de datos manuales previos.
-
-## 9. Entidades del dominio
-
-### 9.1 Documento
+### 8.1 Documento
 
 Archivo: [src/main/java/utp/eidox/model/Documento.java](src/main/java/utp/eidox/model/Documento.java)
 
-Representa cualquier archivo o texto que el sistema almacena para compararlo después.
+Representa cualquier archivo o texto que el sistema almacena para compararlo después. Es el **núcleo del repositorio local** contra el que se comparan los nuevos análisis.
 
-Campos importantes:
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `idDocumento` | `long` | Identificador único (autogenerado). |
+| `nombreArchivo` | `String` | Nombre original del archivo, o un nombre generado (`texto_manual_yyyyMMdd_HHmmss.txt`) cuando el análisis viene de texto pegado manualmente. Es la clave que se usa para el control de duplicados. |
+| `tipoMime` | `String` | Tipo MIME del contenido subido. |
+| `contenidoTexto` | `String` (`LONGTEXT`) | Texto ya extraído por Apache Tika (o el texto manual). Los n-gramas **no** se guardan en la base de datos; se generan en memoria en cada análisis. |
+| `fechaCarga` | `LocalDate` | Fecha de inserción (`@PrePersist`). |
+| `usuario` | `Usuario` | Propietario del documento (relación `@ManyToOne`). |
 
-- `idDocumento`: identificador único.
-- `nombreArchivo`: nombre original del archivo o nombre generado para texto manual.
-- `tipoMime`: tipo MIME del contenido.
-- `contenidoTexto`: texto extraído del archivo o escrito por el usuario.
-- `fechaCarga`: fecha de inserción.
-- `usuario`: relación con el usuario propietario.
-
-### 9.2 Analisis
+### 8.2 Analisis
 
 Archivo: [src/main/java/utp/eidox/model/Analisis.java](src/main/java/utp/eidox/model/Analisis.java)
 
-Guarda el resultado resumido del análisis.
+Guarda el historial/bitácora de cada comparación ejecutada.
 
-Campos importantes:
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `idAnalisis` | `Long` | Identificador único. |
+| `porcentaje` | `Double` | Porcentaje final de plagio calculado. |
+| `referenciasEncontradas` | `String` (`LONGTEXT`) | JSON serializado (Jackson) de la lista de `FuenteCoincidencia`. |
+| `fechaAnalisis` | `LocalDate` | Fecha en que se ejecutó el análisis (`@PrePersist`). |
+| `usuario` | `Usuario` | Usuario asociado al análisis. |
 
-- `porcentaje`: porcentaje final de plagio o similitud.
-- `referenciasEncontradas`: JSON con las fuentes detectadas.
-- `fechaAnalisis`: fecha en que se ejecutó el análisis.
-- `usuario`: usuario asociado.
+Este contador (`analisisRepository.count()`) es, de hecho, el dato real que alimenta la estadística **"Documentos analizados"** del hero de la página de inicio (ver sección 16.1).
 
-### 9.3 Usuario
+### 8.3 Usuario
 
-La entidad `Usuario` representa el propietario de documentos y análisis. En este proyecto se usa un usuario predeterminado para facilitar el flujo sin autenticación completa.
+Archivo: [src/main/java/utp/eidox/model/Usuario.java](src/main/java/utp/eidox/model/Usuario.java)
 
-## 10. Repositorios
+Representa al propietario de documentos y análisis. Como todavía no hay registro/login real, `UsuarioPredeterminadoService` crea (o reutiliza) un usuario fijo `demo_utp` para asociar todo lo que se sube mientras no exista autenticación real.
 
-### DocumentoRepository
+## 9. Repositorios
 
-Archivo: [src/main/java/utp/eidox/repository/DocumentoRepository.java](src/main/java/utp/eidox/repository/DocumentoRepository.java)
+| Repositorio | Archivo | Métodos propios |
+|---|---|---|
+| `UsuarioRepository` | [repository/UsuarioRepository.java](src/main/java/utp/eidox/repository/UsuarioRepository.java) | `findByNombreUsuario`, `existsByCorreo` |
+| `DocumentoRepository` | [repository/DocumentoRepository.java](src/main/java/utp/eidox/repository/DocumentoRepository.java) | `findByNombreArchivo` (clave del control de duplicados) |
+| `AnalisisRepository` | [repository/AnalisisRepository.java](src/main/java/utp/eidox/repository/AnalisisRepository.java) | `findByUsuarioIdUsuarioOrderByFechaAnalisisDesc`, y `count()` heredado de `JpaRepository` |
 
-Permite guardar y consultar documentos.
+Los repositorios no contienen lógica de negocio: solo acceso a datos vía Spring Data JPA.
 
-### AnalisisRepository
+## 10. Controladores
 
-Archivo: [src/main/java/utp/eidox/repository/AnalisisRepository.java](src/main/java/utp/eidox/repository/AnalisisRepository.java)
-
-Permite almacenar análisis y listarlos por usuario y fecha descendente.
-
-La idea general de los repositorios es sencilla:
-
-- se encargan de acceso a datos,
-- no contienen lógica del negocio,
-- y simplifican la lectura/escritura en base de datos.
-
-## 11. Controladores
-
-### 11.1 HomeController
+### 10.1 homeController
 
 Archivo: [src/main/java/utp/eidox/controller/homeController.java](src/main/java/utp/eidox/controller/homeController.java)
 
-Define las rutas de las páginas HTML principales:
+| Ruta | Vista | Detalle |
+|---|---|---|
+| `/`, `/inicio` | `pages/inicio` | Inyecta `totalDocumentosAnalizados` (real, desde `analisisRepository.count()`) en el modelo para el contador del hero. |
+| `/analisis` | `pages/analisis` | Vista de resultados; el contenido real llega por `sessionStorage`, no por el modelo del servidor. |
 
-- `/` y `/inicio` -> vista principal.
-- `/analisis` -> vista de resultados.
-
-Este controlador no procesa lógica compleja, solo resuelve qué plantilla mostrar.
-
-### 11.2 AnalisisController
+### 10.2 AnalisisController
 
 Archivo: [src/main/java/utp/eidox/controller/AnalisisController.java](src/main/java/utp/eidox/controller/AnalisisController.java)
 
-Es el corazón del flujo de análisis.
+Es el corazón del flujo de análisis. Expone **un solo endpoint lógico** (`/api/analisis/subir`) con tres variantes de `@PostMapping` según el `Content-Type` de la petición (multipart con archivo, formulario con texto, o mixto), que internamente delegan a un mismo método privado `ejecutarAnalisisInterno`.
 
-#### Endpoint principal: `/api/analisis/subir`
+- `POST /api/analisis/subir` → llama a `AnalisisService.procesarAnalisis(archivo, texto)`.
+  - Responde `200 OK` con el JSON de resultados si todo sale bien.
+  - Responde `400 Bad Request` con `{ exito: false, mensaje: ... }` si hay un error controlado (ej. menos de 70 palabras) o inesperado.
+- `POST /api/analisis/reporte/descargar-pdf` (consume `application/json`) → llama a `AnalisisService.generarReportePdf(...)` y responde con el PDF como `application/pdf` y cabecera `Content-Disposition: attachment`.
 
-Recibe:
+> **Nota de sincronización:** solo existe reporte en **PDF**. No hay (ni existió en el código, según la revisión actual) un endpoint de reporte en `.txt` — si tu documentación anterior lo mencionaba, ya se corrigió aquí.
 
-- un archivo subido,
-- o texto manual.
+## 11. Servicios
 
-Luego:
-
-1. valida contenido,
-2. extrae texto,
-3. guarda el documento,
-4. compara contra el repositorio,
-5. guarda el análisis,
-6. devuelve un JSON con resultados.
-
-#### Endpoint de reporte TXT: `/api/analisis/reporte/descargar`
-
-Genera un archivo de texto con:
-
-- fecha,
-- documento analizado,
-- porcentaje de similitud,
-- contenido original estimado,
-- lista de fuentes.
-
-#### Endpoint de reporte PDF: `/api/analisis/reporte/descargar-pdf`
-
-Genera un PDF visual con tabla de fuentes y resumen ejecutivo.
-
-En exposición, este controlador se puede describir como la pieza que une frontend, servicios y persistencia.
-
-## 12. Servicios
-
-### 12.1 ExtraccionTikaService
+### 11.1 ExtraccionTikaService
 
 Archivo: [src/main/java/utp/eidox/service/ExtraccionTikaService.java](src/main/java/utp/eidox/service/ExtraccionTikaService.java)
 
-Su función es leer el archivo cargado y convertirlo a texto plano.
+Envuelve `org.apache.tika.Tika` para convertir el archivo subido (PDF o Word) a texto plano, sin necesidad de escribir un parser distinto por formato.
 
-Usa Apache Tika para soportar diferentes formatos sin escribir parsers manuales.
+```java
+public String extraerTexto(MultipartFile archivo) throws Exception {
+    try (InputStream flujoEntrada = archivo.getInputStream()) {
+        return analizadorTika.parseToString(flujoEntrada);
+    } catch (TikaException e) {
+        throw new RuntimeException(e);
+    }
+}
+```
 
-Explicación simple:
+### 11.2 UsuarioPredeterminadoService
 
-- el usuario sube un PDF o DOCX,
-- Tika detecta el formato,
-- extrae el contenido textual,
-- y ese texto pasa al motor de comparación.
+Archivo: [src/main/java/utp/eidox/service/UsuarioPredeterminadoService.java](src/main/java/utp/eidox/service/UsuarioPredeterminadoService.java)
 
-### 12.2 ComparadorSimilitudService
+Obtiene (o crea, la primera vez) un usuario de sistema fijo (`demo_utp`) para poder asociar documentos y análisis mientras no exista un sistema de autenticación real.
+
+### 11.3 PlagioService
+
+Archivo: [src/main/java/utp/eidox/service/PlagioService.java](src/main/java/utp/eidox/service/PlagioService.java)
+
+Responsable de la tokenización y normalización de texto. Funciones clave:
+
+- `normalizarPalabra` / `normalizarTexto`: pasa a minúsculas, quita tildes (á→a, é→e, etc.) y elimina cualquier carácter que no sea letra/número, para que "Backus," y "backus" o "económico" y "economico" cuenten como el mismo token.
+- `tokenizarConPosiciones`: además de normalizar, **recuerda la posición exacta** (`inicio`/`fin`) de cada palabra en el texto original (ver `TokenConPosicion`). Esto es lo que permite después recortar y resaltar el fragmento *tal cual aparece* en el documento original (con tildes, mayúsculas y puntuación intactas), en lugar de mostrar el texto ya normalizado.
+- `generarNGramas(tokens, tamano)`: construye ventanas deslizantes de `tamano` tokens consecutivos. Actualmente **`tamano = 13`** (constante `TAMANO_N_GRAMA` en `ComparadorSimilitudService`).
+
+### 11.4 ComparadorSimilitudService — el motor de detección
 
 Archivo: [src/main/java/utp/eidox/service/ComparadorSimilitudService.java](src/main/java/utp/eidox/service/ComparadorSimilitudService.java)
 
-Este servicio ejecuta la lógica de detección de coincidencias.
+Este es el servicio más importante del sistema, y el que concentra los algoritmos y estructuras de datos del curso.
 
-#### Idea general del algoritmo
+#### Paso a paso del algoritmo
 
-El documento se tokeniza, luego se generan n-gramas de tamaño 5. Después:
+1. El texto nuevo se tokeniza **con posiciones** (`tokenizarConPosiciones`).
+2. Se generan sus n-gramas de 13 tokens, **sin ordenarlos** (a propósito — ver nota más abajo).
+3. Se construye un **Árbol AVL** (`construirIndiceRepositorio`) con todos los documentos del repositorio local (excepto el que se está analizando, si corresponde):
+   - por cada documento, se generan sus n-gramas de 13 tokens,
+   - se **ordenan con Quicksort** (`OrdenadorQuicksort`) y se deduplican en un `LinkedHashSet`,
+   - cada n-grama único se inserta como clave del AVL, con una `ReferenciaDocumento` (id, nombre, tipo, fragmento) como valor asociado a esa clave.
+4. Por cada n-grama del documento nuevo (en su posición original, del 0 al último), se **busca en el AVL** (`indiceDocumento.buscar(...)`) — búsqueda logarítmica gracias al balanceo AVL.
+5. Si hay coincidencia, se marca **qué tokens exactos cubre esa ventana** (los 13 tokens de esa posición) en un conjunto `tokensCubiertos` por cada fuente encontrada.
+6. Al final, esos índices de tokens cubiertos se **fusionan en tramos contiguos** (`construirFragmentosContiguos`) para producir fragmentos de texto reales y continuos — en vez de miles de ventanas de 13 palabras solapadas.
+7. El porcentaje de plagio total es: `(n-gramas con al menos una coincidencia / total de n-gramas del documento) * 100`, redondeado a 2 decimales.
+8. El porcentaje por fuente es análogo, pero solo contando las coincidencias de esa fuente específica.
 
-- se construye un índice con los documentos del repositorio,
-- se busca cada n-grama en ese índice,
-- se acumulan coincidencias por fuente,
-- y finalmente se calcula el porcentaje de similitud.
+#### ¿Por qué NO se ordena la lista de n-gramas del documento nuevo?
+
+A diferencia de los n-gramas del repositorio (que sí se ordenan con Quicksort antes de indexarlos), los n-gramas del documento que se está analizando se recorren **en su orden posicional original**. Esto es intencional: se necesita saber exactamente a qué posición de token corresponde cada n-grama para poder fusionar coincidencias contiguas en el paso 6. El Quicksort del curso se sigue demostrando y usando igualmente, solo que en la construcción del índice (paso 3), que es donde realmente aporta valor.
+
+#### Ejemplo numérico de fusión de fragmentos
+
+Supongamos un documento con estos tokens (simplificando el tamaño de ventana a 4 en vez de 13 para el ejemplo):
+
+```
+posición:   0        1        2       3        4        5        6        7
+token:      "la"     "empresa" "usa"  "una"    "estrategia" "de" "bajo" "costo"
+```
+
+Si las ventanas que empiezan en las posiciones 0, 1 y 2 coinciden con una fuente, se marcan como cubiertos los tokens 0-3, 1-4 y 2-5. Al unir todos esos índices (`{0,1,2,3,4,5}`) se obtiene un solo rango contiguo `[0, 5]`, y el fragmento resaltado será el texto real "la empresa usa una estrategia de" — un bloque legible, no tres ventanas repetidas que casi se solapan del todo.
+
+> Este es exactamente el mecanismo que se corrigió para resolver un bug donde, al comparar un documento idéntico a uno ya guardado (100% de plagio), solo se resaltaban fragmentos sueltos en vez de todo el texto: antes se enviaban al frontend miles de ventanas de 13 palabras solapadas, y el resaltado en el navegador solo lograba "pintar" la primera de cada grupo.
+
+#### Control de duplicados y auto-exclusión (bug corregido)
+
+Cuando un documento con el mismo `nombreArchivo` ya existe en el repositorio, `AnalisisService` reutiliza ese registro en vez de duplicarlo. El detalle importante: **solo se excluye del índice AVL el documento cuando es recién insertado en este mismo análisis**. Si el documento ya existía de antes, no se excluye nada, y por lo tanto se compara contra el repositorio completo — incluyendo su propia copia ya guardada — permitiendo detectar correctamente un 100% de coincidencia.
+
+```java
+Long idAExcluir = esDocumentoNuevo ? documentoGuardado.getIdDocumento() : null;
+ResultadoComparacion resultado = comparadorSimilitudService.compararTexto(textoExtraido, idAExcluir);
+```
 
 #### Componentes internos usados
 
-- `PlagioService`: tokenización y generación de n-gramas.
-- `OrdenadorQuicksort`: ordenamiento de n-gramas.
-- `BuscadorBinario`: apoyo para búsquedas auxiliares.
-- `ArbolAVL`: índice de coincidencias.
+- `PlagioService`: tokenización, normalización y generación de n-gramas.
+- `OrdenadorQuicksort`: ordena los n-gramas del repositorio antes de indexarlos.
+- `BuscadorBinario`: usado como apoyo auxiliar sobre la lista ya ordenada de n-gramas de cada documento indexado.
+- `ArbolAVL` / `NodoAVL` / `ReferenciaDocumento`: índice principal de búsqueda.
 
 #### Qué devuelve
 
-Retorna un objeto `ResultadoComparacion` con:
+Un objeto `ResultadoComparacion` con `porcentajePlagio`, `totalPalabras`, `textoOriginal` y la lista `fuentes` (cada una, un `FuenteCoincidencia`).
 
-- `porcentajePlagio`
-- `totalPalabras`
-- `textoOriginal`
-- `fuentes`
+### 11.5 AnalisisService — orquestador del flujo
 
-#### Explicación para exposición
+Archivo: [src/main/java/utp/eidox/service/AnalisisService.java](src/main/java/utp/eidox/service/AnalisisService.java)
 
-El motor no hace una comparación de documento completo solamente. En su lugar, divide el texto en fragmentos pequeños, busca coincidencias y agrupa resultados por fuente. Eso le da más precisión para mostrar exactamente qué parte coincidió y con qué documento.
+Coordina todo el proceso de principio a fin:
 
-## 13. Objetos de transferencia de datos
+1. **Extraer y validar origen del contenido**: archivo (vía Tika) o texto manual (mínimo 70 palabras si no hay archivo).
+2. **Control de duplicados** por `nombreArchivo` (ver 11.4).
+3. **Ejecutar la comparación** con `ComparadorSimilitudService`.
+4. **Guardar la bitácora** en `Analisis` (porcentaje + JSON de fuentes vía Jackson `ObjectMapper`).
+5. **Construir la respuesta** (`Map<String,Object>`) que consume el frontend.
+
+También contiene `generarReportePdf`, que reconstruye un `ResultadoComparacion` a partir del JSON recibido desde el frontend y arma el PDF con **OpenPDF** (`com.lowagie.text`):
+
+- título y fecha del reporte,
+- resumen (porcentaje de similitud, contenido original estimado, total de palabras, total de fuentes),
+- una tabla (`PdfPTable`) con: `#`, Fuente, Tipo, % similitud, Referencia (o "Documento interno" si no hay URL).
+
+## 12. Objetos de transferencia de datos (DTO)
 
 ### ResultadoComparacion
 
 Archivo: [src/main/java/utp/eidox/service/dto/ResultadoComparacion.java](src/main/java/utp/eidox/service/dto/ResultadoComparacion.java)
 
-Es el paquete principal de salida del análisis.
+Paquete principal de salida del análisis: `porcentajePlagio`, `totalPalabras`, `textoOriginal`, `fuentes`.
 
 ### FuenteCoincidencia
 
 Archivo: [src/main/java/utp/eidox/service/dto/FuenteCoincidencia.java](src/main/java/utp/eidox/service/dto/FuenteCoincidencia.java)
 
-Describe una fuente encontrada:
+Describe una fuente encontrada en el repositorio: `nombre`, `tipo` (`pdf`/`word`), `url` (siempre `null` hoy, reservado para fuentes externas futuras), `porcentaje` que esa fuente aporta al total, `fragmentoCoincidente` (el primer fragmento fusionado, usado como vista previa en la tarjeta), y `fragmentosEnTexto` (la lista completa de fragmentos continuos que se resaltan en el documento).
 
-- nombre,
-- tipo,
-- URL o referencia,
-- porcentaje aportado,
-- fragmento coincidente,
-- lista de fragmentos hallados en el texto.
+## 13. Estructuras de datos y utilidades del curso
 
-## 14. Estructuras de datos y utilidades
+Aunque el usuario final no las ve directamente, estas piezas son el corazón "académico" del proyecto.
 
-Aunque el usuario no las ve directamente, estas piezas son importantes para explicar el rendimiento del sistema.
+### 13.1 ArbolAVL
 
-### ArbolAVL
+Archivo: [src/main/java/utp/eidox/estructura/ArbolAVL.java](src/main/java/utp/eidox/estructura/ArbolAVL.java) (nodo en [NodoAVL.java](src/main/java/utp/eidox/estructura/NodoAVL.java))
 
-Se usa como índice para búsquedas ordenadas y rápidas de n-gramas.
+Árbol binario de búsqueda **auto-balanceado**, usado como índice de n-gramas → lista de `ReferenciaDocumento`. Cada nodo guarda una clave (`String`, el n-grama normalizado) y una **lista** de referencias, porque el mismo n-grama puede aparecer en más de un documento del repositorio.
 
-### OrdenadorQuicksort
+Operaciones soportadas: `insertar`, `buscar` (devuelve la lista de referencias o vacía), `existe`, `recorridoEnOrden`.
 
-Ordena la lista de n-gramas antes de construir o consultar estructuras internas.
+Balanceo mediante las 4 rotaciones clásicas (izquierda, derecha, izquierda-derecha, derecha-izquierda), recalculando la altura de cada nodo tras insertar.
 
-### BuscadorBinario
+```mermaid
+graph TD
+    A["'de escala' (altura 2)"] --> B["'costo bajo' (altura 1)"]
+    A --> C["'red distribucion' (altura 1)"]
+    B --> D["referencias: [Avance Proyecto Final.pdf]"]
+    C --> E["referencias: [Avance Proyecto Final.pdf, Tesis_Backus.docx]"]
+```
+*(ejemplo ilustrativo simplificado: en la práctica la clave es el n-grama completo de 13 palabras normalizadas, no 2)*
 
-Apoya búsquedas eficientes sobre listas ordenadas.
+**Complejidad**: O(log n) para inserción y búsqueda, gracias al balanceo — esto es lo que permite comparar un documento nuevo contra miles de n-gramas del repositorio sin que el tiempo de respuesta crezca linealmente con el tamaño del repositorio.
 
-### Razón de su uso
+### 13.2 OrdenadorQuicksort
 
-Estas estructuras ayudan a que el análisis no sea una simple comparación lineal, sino un proceso más organizado y escalable.
+Archivo: [src/main/java/utp/eidox/util/OrdenadorQuicksort.java](src/main/java/utp/eidox/util/OrdenadorQuicksort.java)
 
-## 15. Interfaz de usuario principal
+Implementación clásica de Quicksort (partición tipo Lomuto, pivote = último elemento), usada para ordenar los n-gramas de **cada documento del repositorio** antes de indexarlos en el AVL. Complejidad promedio O(n log n).
 
-### 15.1 Vista de inicio
+### 13.3 BuscadorBinario
+
+Archivo: [src/main/java/utp/eidox/util/BuscadorBinario.java](src/main/java/utp/eidox/util/BuscadorBinario.java)
+
+Búsqueda binaria clásica sobre una lista ya ordenada (`compareTo` lexicográfico). Complejidad O(log n). Se usa como apoyo auxiliar durante la indexación de cada documento del repositorio.
+
+### Por qué se usan estas estructuras (y no solo un `HashMap`)
+
+Un `HashMap<String, List<ReferenciaDocumento>>` habría resuelto la búsqueda en O(1) promedio con mucho menos código. La elección del AVL + Quicksort + Búsqueda Binaria responde a que el objetivo del curso es **demostrar el uso correcto de las estructuras de datos y algoritmos vistos en clase** (árboles balanceados, ordenamiento, búsqueda), no necesariamente la opción de rendimiento óptimo en un sistema de producción real. Este es un punto útil para la sustentación: puedes explicar el trade-off conscientemente.
+
+## 14. Interfaz de usuario principal
+
+### 14.1 Vista de inicio
 
 Archivo: [src/main/resources/templates/pages/inicio.html](src/main/resources/templates/pages/inicio.html)
 
+Layout compartido vía fragmento Thymeleaf: [templates/fragments/index.html](src/main/resources/templates/fragments/index.html) (header, nav, footer y modal premium comunes a todas las páginas).
+
 Contiene:
 
-- hero principal,
-- sección de análisis,
-- cargador de archivo,
-- textarea para texto manual,
-- contador de palabras,
-- barra de progreso,
-- botón de análisis.
+- hero principal con estadísticas (ver 14.3),
+- sección de análisis con cargador de archivo (drag & drop) y textarea para texto manual,
+- contador de palabras en vivo,
+- barra de progreso / validaciones,
+- botón de análisis (`#btnAnalizar`).
 
-#### Qué hace la sección de análisis
-
-Permite dos entradas:
-
-- archivo PDF/DOCX,
-- texto manual con al menos 70 palabras.
-
-### 15.2 Vista de resultados
+### 14.2 Vista de resultados
 
 Archivo: [src/main/resources/templates/pages/analisis.html](src/main/resources/templates/pages/analisis.html)
 
-Muestra:
+Muestra (todo poblado dinámicamente por `analisis.js` desde el JSON en `sessionStorage`, no por el servidor):
 
-- porcentaje de plagio,
-- porcentaje de originalidad,
-- fuentes encontradas,
-- texto resaltado con coincidencias,
-- desglose visual por fuente,
-- botón para descargar reporte PDF,
-- botón para nuevo análisis.
+- medidor circular animado con el porcentaje de plagio y nivel de riesgo (bajo / medio / alto / crítico),
+- tarjetas resumen: % plagio, fuentes encontradas, palabras analizadas, % contenido original,
+- barra de desglose por fuente + leyenda de colores,
+- texto original con los fragmentos coincidentes resaltados (clicables, con color por fuente),
+- panel de "Fuentes encontradas" (tarjetas con nombre, tipo, % de aporte y fragmento destacado),
+- botón "Descargar reporte PDF",
+- botón "Nuevo análisis".
+
+### 14.3 Estadísticas del hero (sincronizadas con datos reales)
+
+En el hero de `/inicio` hay tres contadores animados:
+
+| Contador | Origen del dato |
+|---|---|
+| Precisión | Valor fijo de marketing (`98%`) — no hay una métrica automática de precisión medida contra un dataset etiquetado. |
+| Documentos analizados | **Real**, viene de `analisisRepository.count()` inyectado por `homeController` en el atributo `totalDocumentosAnalizados`. |
+| Tiempo promedio | Valor fijo de marketing (`2s`-`3s`) — no se mide automáticamente el tiempo real de cada análisis todavía (posible mejora futura, ver sección 18). |
+
+## 15. Botón "Ser premium" (vitrina, sin lógica de pago aún)
+
+Archivos: fragmento del botón y modal en [templates/fragments/index.html](src/main/resources/templates/fragments/index.html), lógica en [static/js/modalPremium.js](src/main/resources/static/js/modalPremium.js), estilos al final de [static/css/styles.css](src/main/resources/static/css/styles.css).
+
+El header incluye un botón **"Ser premium"** (desktop) y su equivalente en el menú móvil. Al hacer clic, `abrirModalPremium()` muestra un modal con:
+
+- encabezado con ícono y descripción,
+- chips de características (búsqueda profunda, informes precisos, soporte, sin anuncios),
+- un toggle visual Mensual/Anual (solo cambia una clase CSS, sin recalcular precios todavía),
+- dos tarjetas de planes (Básico $9.99 / Pro $19.99, destacado con badge "Popular"),
+- enlace "Ver todas las funciones".
+
+Es, a propósito, **solo una interfaz** por ahora: no hay backend de suscripciones, pagos ni control de acceso por plan. Es el punto de partida natural para una futura fase de monetización o de límites de uso por plan.
 
 ## 16. JavaScript de interacción
 
@@ -408,121 +456,90 @@ Muestra:
 
 Archivo: [src/main/resources/static/js/app.js](src/main/resources/static/js/app.js)
 
-Este archivo controla la experiencia general de la página de inicio:
-
-- tema oscuro/claro,
-- menú móvil,
-- partículas decorativas,
-- efecto parallax,
-- aparición de secciones al hacer scroll,
-- contador de palabras,
-- validación de entrada,
-- carga y limpieza de archivo.
-
-#### Función clave: iniciarAreaTexto
-
-Valida que el texto tenga al menos 70 palabras.
-
-#### Función clave: iniciarSubidaArchivo
-
-Maneja:
-
-- selección del archivo,
-- validación de tipo MIME,
-- bloqueo del textarea si hay archivo,
-- limpieza del archivo si se quita.
+Controla la experiencia general de la página de inicio: tema oscuro/claro (persistido vía clase `dark-mode` en `body`), menú móvil, partículas decorativas, parallax, animación de aparición al hacer scroll, contador de palabras en vivo, validación de entrada (mínimo 70 palabras si no hay archivo) y manejo de selección/limpieza de archivo (con validación de tipo MIME).
 
 ### 16.2 analisis.js
 
 Archivo: [src/main/resources/static/js/analisis.js](src/main/resources/static/js/analisis.js)
 
-Este archivo se encarga de renderizar la vista de resultados.
+Renderiza toda la vista de resultados a partir del JSON guardado en `sessionStorage` (clave `eidox-resultado-analisis`):
 
-#### Qué hace
+- anima los contadores y el medidor circular (`animarContadorDirecto`, easing cúbico),
+- construye la barra de desglose por fuente y su leyenda,
+- construye el texto resaltado (`construirTextoHighlighted`): ordena los fragmentos por longitud descendente antes de insertarlos (para que un fragmento largo no quede cortado por uno más corto que se solape) y usa `split/join` (no `replace` simple) para cubrir todas las apariciones literales del fragmento,
+- construye las tarjetas de fuentes con su color, ícono según tipo (`pdf`/`word`) y fragmento destacado,
+- gestiona el clic cruzado texto ↔ tarjeta (`activarFuente`): resalta la fuente elegida y atenúa el resto,
+- gestiona la descarga del reporte PDF (`fetch` a `/reporte/descargar-pdf`, descarga el blob resultante).
 
-- recibe el JSON del backend,
-- actualiza contadores,
-- anima el medidor circular,
-- pinta barras de desglose,
-- construye la lista de fuentes,
-- resalta fragmentos coincidentes en el texto,
-- guarda el resultado en `sessionStorage`,
-- recupera el resultado al entrar a `/analisis`,
-- descarga el reporte PDF desde el backend.
+### 16.3 colorGenerator.js
 
-#### Renderizado del texto
+Archivo: [src/main/resources/static/js/colorGenerator.js](src/main/resources/static/js/colorGenerator.js)
 
-Cuando llega una fuente con fragmentos coincidentes, el script reemplaza esas porciones dentro del texto por etiquetas resaltadas con colores dinámicos. Eso le da al usuario una lectura visual de dónde ocurrió la coincidencia.
+Clase `GeneradorColor`: asigna un color HSL distinto a cada fuente (rotando el matiz en pasos de 60°), con paletas separadas para modo claro y oscuro, y variantes (fondo/texto, borde, "vibrante" para la barra de desglose). Se recalcula automáticamente si el usuario cambia de tema (observa cambios de clase en `body` con `MutationObserver` y dispara un evento `colores-fuente-actualizados`).
 
-#### Descarga del reporte
+### 16.4 modalPremium.js
 
-Al pulsar el botón de descarga:
+Archivo: [src/main/resources/static/js/modalPremium.js](src/main/resources/static/js/modalPremium.js)
 
-1. Se toma el análisis actual.
-2. Se manda al backend.
-3. El backend responde con un PDF.
-4. El navegador lo descarga automáticamente.
+Abre/cierra el modal de precios (ver sección 15): clic fuera de la tarjeta, botón de cerrar o tecla `Escape` lo cierran; bloquea el scroll del `body` mientras está abierto.
 
-## 17. Generación de reporte
+## 17. Generación de reporte PDF
 
-Actualmente el sistema tiene dos formatos de descarga:
+Archivo (lógica): [src/main/java/utp/eidox/service/AnalisisService.java](src/main/java/utp/eidox/service/AnalisisService.java), método `construirReportePdf`.
 
-- TXT para una lectura rápida.
-- PDF para una presentación más profesional.
+Contenido del PDF (generado con OpenPDF, formato A4):
 
-### Qué contiene el reporte PDF
+- título "REPORTE DETALLADO DE ORIGINALIDAD" y fecha de generación,
+- nombre del documento analizado,
+- resumen: porcentaje final de similitud, porcentaje original estimado, total de palabras, total de fuentes,
+- tabla con una fila por fuente: `#`, nombre, tipo, % de similitud, referencia (o "Documento interno" si no tiene URL externa).
 
-- título principal,
-- fecha de generación,
-- nombre del documento,
-- porcentaje final de similitud,
-- porcentaje original estimado,
-- total de palabras,
-- total de fuentes encontradas,
-- tabla con referencias de cada fuente.
+Endpoint: `POST /api/analisis/reporte/descargar-pdf`, responde `application/pdf` con `Content-Disposition: attachment; filename="reporte_originalidad_yyyyMMdd_HHmmss.pdf"`.
 
-### Por qué es útil para una exposición
-
-Porque permite mostrar no solo la detección, sino también la evidencia y la trazabilidad de los resultados.
+> **Nota de sincronización:** el sistema **solo** genera reportes en PDF. No existe (en el código actual) una variante en `.txt`.
 
 ## 18. Explicación del algoritmo en lenguaje sencillo
 
-Si necesitas explicarlo frente a un público, puedes decirlo así:
+Para explicarlo frente a un público sin entrar en el detalle de código:
 
-1. El sistema toma el texto del usuario.
-2. Lo divide en palabras y construye fragmentos de 5 palabras.
-3. Hace lo mismo con los documentos guardados en la base local.
-4. Busca fragmentos iguales o muy parecidos.
-5. Suma las coincidencias por fuente.
-6. Calcula el porcentaje final de similitud.
-7. Devuelve al usuario un informe visual y descargable.
+1. El sistema toma el texto del usuario (archivo o texto pegado).
+2. Lo limpia (minúsculas, sin tildes) y lo divide en palabras.
+3. Arma "ventanas" de 13 palabras consecutivas (n-gramas) — como una regla que se desliza palabra por palabra sobre el texto.
+4. Hace lo mismo con cada documento ya guardado en el repositorio local, y los indexa en un árbol AVL (ordenados previamente con Quicksort) para poder buscarlos rápido.
+5. Busca cada ventana de 13 palabras del documento nuevo dentro de ese árbol.
+6. Cuando encuentra coincidencias, **junta las ventanas que están una al lado de la otra** para formar bloques de texto continuos y legibles (no fragmentos sueltos de 13 palabras cada uno).
+7. Calcula qué porcentaje de las ventanas totales tuvo alguna coincidencia — ese es el porcentaje de plagio.
+8. Devuelve al usuario un informe visual (con el texto resaltado) y un reporte PDF descargable con la evidencia.
 
 ## 19. Puntos fuertes del sistema
 
-- No depende de servicios externos para comparar documentos.
-- Usa el repositorio local como base de conocimiento.
-- Muestra resultados visuales claros.
-- Permite analizar archivo o texto manual.
-- Genera reporte descargable para evidencia.
-- Tiene datos de ejemplo para facilitar demostración.
+- No depende de servicios externos para comparar documentos: todo el repositorio y la comparación son locales.
+- Usa estructuras de datos balanceadas (AVL) en vez de una comparación fuerza bruta, lo que da búsquedas logarítmicas.
+- El resaltado en pantalla muestra bloques de texto continuos y reales, no fragmentos artificiales solapados.
+- Detecta correctamente coincidencias del 100% cuando un documento ya existente se vuelve a analizar (bug de auto-exclusión corregido).
+- Permite analizar archivo o texto manual con la misma lógica.
+- Genera reporte PDF descargable como evidencia.
+- El contador de "Documentos analizados" del landing usa datos reales de la base, no un número inventado.
 
 ## 20. Limitaciones actuales
 
-- La seguridad está abierta para desarrollo.
-- El análisis depende del contenido disponible en la base local.
-- La calidad del resultado mejora si el repositorio tiene más documentos.
-- El reporte PDF es funcional, pero todavía puede enriquecerse con gráficos o portada.
+- La seguridad está abierta para desarrollo (sin login real todavía).
+- El botón "Ser premium" es solo una vitrina visual; no hay planes, pagos ni límites de uso reales.
+- El análisis depende exclusivamente del contenido disponible en el repositorio local (no compara contra internet).
+- La calidad del resultado mejora conforme crece el repositorio local.
+- El control de duplicados se basa en el **nombre del archivo**, no en un hash de contenido — dos archivos con el mismo nombre pero contenido distinto se tratarían como el mismo documento.
+- "Precisión" y "Tiempo promedio" en el hero son valores fijos de marketing, no métricas medidas en tiempo real.
+- El reporte PDF es funcional pero aún austero (sin portada ni gráficos incrustados).
 
-## 21. Idea de mejora futura
+## 21. Ideas de mejora futura
 
-- Agregar autenticación real.
-- Guardar relación explícita entre análisis y documento para historiales más completos.
-- Exportar reportes con diseño más formal.
-- Añadir comparación semántica, no solo por n-gramas.
-- Crear historial de análisis por usuario.
+- Agregar autenticación real y roles (aprovechando que Spring Security ya está en el proyecto) y darle lógica real al plan "Ser premium".
+- Detectar duplicados por hash de contenido en vez de por nombre de archivo.
+- Medir y mostrar el tiempo real de cada análisis (para reemplazar el "Tiempo promedio" fijo).
+- Exportar reportes con diseño más formal (portada, gráficos del medidor circular).
+- Añadir comparación semántica (embeddings) además de la coincidencia exacta por n-gramas, para detectar parafraseo más elaborado.
+- Crear un historial de análisis navegable por usuario (la entidad `Analisis` ya guarda todo lo necesario).
 
 ## 22. Guion breve para exposición
 
-Si quieres presentarlo oralmente, puedes resumirlo así:
-
-"Eidox es un sistema web para detectar similitud entre un documento nuevo y un repositorio local de documentos. El usuario puede subir un archivo o escribir texto manualmente. El backend extrae el contenido, lo tokeniza, genera n-gramas y compara esos fragmentos con los documentos almacenados. Después calcula un porcentaje de similitud y muestra las fuentes encontradas de forma visual. Además, el sistema genera un reporte PDF descargable con el resultado detallado, lo que facilita la revisión y la presentación de evidencias."
+"Eidox es un sistema web para detectar similitud entre un documento nuevo y un repositorio local de documentos. El usuario puede subir un archivo PDF o Word, o escribir texto manualmente. El backend extrae el contenido con Apache Tika, lo tokeniza y lo divide en n-gramas de 13 palabras. Esos n-gramas se comparan contra un índice construido con un Árbol AVL —alimentado por los documentos del repositorio, previamente ordenados con Quicksort—, lo que permite búsquedas logarítmicas en vez de una comparación exhaustiva. Cuando hay coincidencias, el sistema fusiona las ventanas contiguas en bloques de texto reales y calcula el porcentaje final de similitud. El resultado se muestra de forma visual, con el texto resaltado y las fuentes encontradas, y se puede descargar como reporte PDF con la evidencia completa."

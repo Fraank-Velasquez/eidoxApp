@@ -1,4 +1,3 @@
-
 if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark-mode');
 }
@@ -332,6 +331,14 @@ function iniciarSubidaArchivo() {
         if (!tiposValidos.includes(archivo.type)) {
             entradaArchivo.value = '';
             mostrarToast("Solo se permiten cargar documentos PDF o Word", btnSubir)
+            return;
+        }
+
+        const TAMANO_MAXIMO_BYTES = 10 * 1024 * 1024;
+        if (archivo.size > TAMANO_MAXIMO_BYTES) {
+            entradaArchivo.value = '';
+            mostrarToast("El archivo supera el tamaño máximo permitido de 10 MB", btnSubir);
+            return;
         }
 
         const nombre = entradaArchivo.files[0]?.name || '';
