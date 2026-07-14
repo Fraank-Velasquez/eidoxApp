@@ -55,9 +55,9 @@ function intentarRenderizarResultadoGuardado() {
         }
     } catch (error) {
         console.error('No se pudo recuperar el resultado del analisis guardado:', error);
-    } finally {
+    } /* finally {
         sessionStorage.removeItem(CLAVE_RESULTADO_ANALISIS);
-    }
+    } */
 }
 
 window.addEventListener('colores-fuente-actualizados', () => {
@@ -386,12 +386,12 @@ function filtrarPorFuente(indice) {
 }
 
 function calcularColorBorde(colorFondo) {
-   
+
     const r = parseInt(colorFondo.slice(1, 3), 16);
     const g = parseInt(colorFondo.slice(3, 5), 16);
     const b = parseInt(colorFondo.slice(5, 7), 16);
 
-   
+
     const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
     // Si es claro, oscurecer; si es oscuro, aclarar

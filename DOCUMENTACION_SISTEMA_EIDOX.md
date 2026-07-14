@@ -8,10 +8,10 @@ Eidox es una aplicación web desarrollada con Spring Boot, Thymeleaf y JavaScrip
 
 El objetivo principal del sistema es ayudar a identificar posible plagio u originalidad baja en un contenido, mostrando de forma visual:
 
-- el porcentaje final de similitud (círculo animado + nivel de riesgo),
+- el porcentaje final de similitud ,
 - el porcentaje estimado de contenido original,
 - las fuentes encontradas en el repositorio local, con su propio porcentaje de aporte,
-- los fragmentos coincidentes resaltados dentro del texto analizado (de forma continua, no por ventanas sueltas),
+- los fragmentos coincidentes resaltados dentro del texto analizado,
 - y un reporte descargable en PDF con tabla de fuentes.
 
 ## 2. Vista general de la arquitectura
@@ -22,7 +22,7 @@ El proyecto sigue una arquitectura web clásica por capas:
 - **Control**: un controlador MVC (`homeController`) para las vistas, y un controlador REST (`AnalisisController`) para el flujo de análisis.
 - **Servicio**: extracción de texto, tokenización, comparación por n-gramas y generación de reportes PDF.
 - **Persistencia**: entidades JPA (`Usuario`, `Documento`, `Analisis`) sobre MySQL.
-- **Soporte / estructuras de datos**: `ArbolAVL`, `OrdenadorQuicksort`, `BuscadorBinario` — el contenido "académico" del curso de Estructura de Datos y Algoritmos.
+- **Soporte / estructuras de datos**: `ArbolAVL`, `OrdenadorQuicksort`, `BuscadorBinario` y Algoritmos.
 
 ```mermaid
 flowchart TD
@@ -133,8 +133,6 @@ Contiene la clase principal con `@SpringBootApplication`, que arranca todo el co
 SpringApplication.run(PlagiodetectApplication.class, args);
 ```
 
-En una exposición puedes explicarlo así:
-
 - es el arranque del sistema,
 - carga el contexto de Spring,
 - detecta beans, controladores, servicios y repositorios,
@@ -155,9 +153,7 @@ Esto significa que:
 - CSRF está desactivado (necesario porque el análisis se envía vía `fetch`/`FormData` sin token),
 - el sistema está en modo abierto mientras se desarrolla y se hacen las entregas del curso.
 
-Para exposición, esto se puede explicar como una decisión de desarrollo para facilitar pruebas internas y prototipado — el botón **"Ser premium"** del header (ver sección 16.4) es hoy solo una vitrina visual sin lógica de pago ni de roles todavía, coherente con este estado de seguridad abierto.
-
-> **Nota de sincronización:** versiones previas de esta documentación mencionaban un componente `CargadorDatosIniciales` que insertaba documentos de ejemplo y corregía el esquema de la tabla `analisis` al arrancar. Ese componente **ya no existe** en el proyecto actual — el repositorio arranca vacío y el esquema se gestiona con `spring.jpa.hibernate.ddl-auto=update`. Si necesitas datos de ejemplo para una demo, hay que subirlos manualmente desde la interfaz.
+ — el botón **"Ser premium"** del header (ver sección 16.4) es hoy solo una vitrina visual sin lógica de pago ni de roles todavía, coherente con este estado de seguridad abierto.
 
 ## 8. Entidades del dominio
 
@@ -230,7 +226,6 @@ Es el corazón del flujo de análisis. Expone **un solo endpoint lógico** (`/ap
   - Responde `400 Bad Request` con `{ exito: false, mensaje: ... }` si hay un error controlado (ej. menos de 70 palabras) o inesperado.
 - `POST /api/analisis/reporte/descargar-pdf` (consume `application/json`) → llama a `AnalisisService.generarReportePdf(...)` y responde con el PDF como `application/pdf` y cabecera `Content-Disposition: attachment`.
 
-> **Nota de sincronización:** solo existe reporte en **PDF**. No hay (ni existió en el código, según la revisión actual) un endpoint de reporte en `.txt` — si tu documentación anterior lo mencionaba, ya se corrigió aquí.
 
 ## 11. Servicios
 
@@ -275,7 +270,7 @@ Este es el servicio más importante del sistema, y el que concentra los algoritm
 #### Paso a paso del algoritmo
 
 1. El texto nuevo se tokeniza **con posiciones** (`tokenizarConPosiciones`).
-2. Se generan sus n-gramas de 13 tokens, **sin ordenarlos** (a propósito — ver nota más abajo).
+2. Se generan sus n-gramas de 13 tokens, **sin ordenarlos** 
 3. Se construye un **Árbol AVL** (`construirIndiceRepositorio`) con todos los documentos del repositorio local (excepto el que se está analizando, si corresponde):
    - por cada documento, se generan sus n-gramas de 13 tokens,
    - se **ordenan con Quicksort** (`OrdenadorQuicksort`) y se deduplican en un `LinkedHashSet`,
