@@ -49,7 +49,7 @@ public class AnalisisService {
         String nombreArchivo;
         String tipoMime;
 
-        // 1. Extraer y validar origen del contenido
+        // Extraer y validar origen del contenido
         if (archivo != null && !archivo.isEmpty()) {
             textoExtraido = extraccionService.extraerTexto(archivo);
             nombreArchivo = archivo.getOriginalFilename() != null ? archivo.getOriginalFilename()
@@ -68,15 +68,14 @@ public class AnalisisService {
             throw new IllegalArgumentException("El texto debe tener al menos 70 palabras para ser analizado.");
         }
 
-        // 2. CONTROL DE DUPLICADOS: Verificar si el documento ya existe en el
-        // repositorio local
+        //  Verificar si el documento ya existe en el
+
         Optional<Documento> documentoExistente = documentoRepository.findByNombreArchivo(nombreArchivo);
         Documento documentoGuardado;
         boolean esDocumentoNuevo = documentoExistente.isEmpty();
 
         if (documentoExistente.isPresent()) {
-            // Si el documento ya existe, NO lo guardamos de nuevo. Reutilizamos el registro
-            // existente.
+            // Si el documento ya existe, NO lo guardamos de nuevo. Reutilizamos el registro existente.
             documentoGuardado = documentoExistente.get();
         } else {
             // Si el documento es completamente nuevo, procedemos a registrarlo en la BD
@@ -89,22 +88,17 @@ public class AnalisisService {
             documentoGuardado = documentoRepository.save(documentoNuevo);
         }
 
-        // 3. Ejecutar algoritmo matemático de detección de plagio
-        // Solo excluimos el documento del índice cuando es recién insertado en este
-        // análisis.
-        // Si ya existía previamente en la BD, se debe comparar contra TODO el
-        // repositorio
-        // (incluyendo ese propio registro) para poder detectar coincidencias del 100%.
+        
         Long idAExcluir = esDocumentoNuevo ? documentoGuardado.getIdDocumento() : null;
         ResultadoComparacion resultado = comparadorSimilitudService.compararTexto(textoExtraido, idAExcluir);
-        // 4. Guardar bitácora del análisis en la BD
+        //  Guardar bitácora del análisis en la BD
         Analisis analisis = new Analisis();
         analisis.setPorcentaje(resultado.getPorcentajePlagio());
         analisis.setUsuario(documentoGuardado.getUsuario());
         analisis.setReferenciasEncontradas(SERIALIZADOR_JSON.writeValueAsString(resultado.getFuentes()));
         analisisRepository.save(analisis);
 
-        // 5. Estructurar respuesta para el controlador
+        // Estructurar respuesta para el controlador
         Map<String, Object> respuesta = new LinkedHashMap<>();
         respuesta.put("exito", true);
         respuesta.put("porcentajePlagio", resultado.getPorcentajePlagio());

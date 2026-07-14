@@ -42,13 +42,7 @@ public class ComparadorSimilitudService {
         List<String> tokensNormalizadosNuevoDocumento = tokensNuevoDocumento.stream()
                 .map(token -> token.getTokenNormalizado())
                 .toList();
-        // Nota: aquí se conserva el orden posicional (NO se ordena con Quicksort)
-        // porque
-        // necesitamos saber a qué índice de token corresponde cada n-grama para poder
-        // fusionar
-        // luego las coincidencias contiguas. El Quicksort del curso se sigue aplicando
-        // en
-        // construirIndiceRepositorio() al indexar cada documento del repositorio.
+
         List<String> nGramasNuevoDocumento = plagioService.generarNGramas(tokensNormalizadosNuevoDocumento,
                 TAMANO_N_GRAMA);
 
@@ -75,9 +69,7 @@ public class ComparadorSimilitudService {
                         clave -> new AcumuladoFuente(referencia.getNombreDocumento(), referencia.getTipoDocumento()));
 
                 acumulado.coincidencias++;
-                // Marcamos TODOS los tokens que cubre esta ventana de n-grama (no solo el
-                // inicio),
-                // así luego podemos fusionar tramos contiguos en un solo fragmento continuo.
+
                 for (int desplazamiento = 0; desplazamiento < TAMANO_N_GRAMA; desplazamiento++) {
                     acumulado.tokensCubiertos.add(posicion + desplazamiento);
                 }
@@ -153,15 +145,6 @@ public class ComparadorSimilitudService {
         return fuentes;
     }
 
-    /**
-     * Fusiona un conjunto de índices de token (ordenado) en tramos contiguos y
-     * devuelve
-     * el texto real de cada tramo. Esto evita mandar al frontend miles de ventanas
-     * de
-     * n-gramas solapadas (que se pisan entre sí al resaltar) y en su lugar entrega
-     * bloques
-     * de texto continuos, tal como aparecen coincidencias reales en el documento.
-     */
     private List<String> construirFragmentosContiguos(Set<Integer> tokensCubiertos,
             List<TokenConPosicion> tokensNuevoDocumento, String textoOriginal) {
 
@@ -257,9 +240,7 @@ public class ComparadorSimilitudService {
         private final String nombreDocumento;
         private final String tipoDocumento;
         private int coincidencias;
-        // TreeSet: mantiene los índices de token ordenados, necesario para poder
-        // fusionar
-        // tramos contiguos en construirFragmentosContiguos().
+
         private final Set<Integer> tokensCubiertos = new TreeSet<>();
 
         private AcumuladoFuente(String nombreDocumento, String tipoDocumento) {
